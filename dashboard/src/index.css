@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+.glass-card {
+  @apply bg-slate-800/50 backdrop-blur-lg border border-slate-700/50 rounded-xl;
+}
+
+.status-badge {
+  @apply px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide;
+}
+
+.approval-button {
+  @apply px-6 py-3 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105;
+}
