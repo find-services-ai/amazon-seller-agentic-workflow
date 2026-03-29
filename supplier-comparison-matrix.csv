@@ -1,0 +1,6 @@
+Rank,Supplier,Contact_Platform,Location,Unit_Price_Low,Unit_Price_High,MOQ,Lead_Time_Days,Dropship,Shipping_Est_Per_Unit,Trade_Assurance_Coverage,Response_Rate,Review_Score,Initial_Score,Status,Quoted_Price,Quoted_MOQ,Quoted_Shipping,Actual_Landed_Cost,Notes
+1,Shenzhen Petzone Technology Co. Ltd.,Alibaba,Shenzhen,2.50,3.80,50,5-10,Yes,2.50,80000,96%,4.9,92,Pending Outreach,,,,,Low MOQ + dropship badge - top candidate
+2,Hangzhou Tianyuan Pet Products Co. Ltd.,Alibaba,Hangzhou,2.60,3.90,30,5-7,Likely,2.50,50000,88%,4.6,88,Pending Outreach,,,,,Ultra-low MOQ - fastest lead time
+3,Ningbo Yinzhou Zhenhai Pet Products Co. Ltd.,Alibaba,Ningbo,2.80,4.20,100,7-15,TBD,2.50,150000,92%,4.8,85,Pending Outreach,,,,,Large catalog - need MOQ negotiation
+4,Yiwu Jiuding Pet Products Co. Ltd.,Alibaba,Yiwu,2.20,3.50,100,7-12,TBD,2.50,100000,89%,4.7,78,Pending Outreach,,,,,Lowest price - wholesaler focus
+5,Guangzhou Hoopet Pet Products Co. Ltd.,Alibaba,Guangzhou,3.50,5.00,200,10-20,Maybe,2.50,200000,94%,4.9,75,Pending Outreach,,,,,Premium quality - needs heavy MOQ negotiation

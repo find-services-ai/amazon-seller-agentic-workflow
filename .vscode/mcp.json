@@ -1,0 +1,52 @@
+{
+  "mcpServers": {
+    "gmail": {
+      "command": "npx",
+      "args": ["-y", "@anthropics/mcp-gmail"],
+      "env": {
+        "GMAIL_CREDENTIALS_PATH": "${workspaceFolder}/.mcp/credentials/gmail.json"
+      },
+      "disabled": false,
+      "description": "Send supplier outreach emails, follow-ups, and negotiations"
+    },
+    "google-sheets": {
+      "command": "npx",
+      "args": ["-y", "@anthropics/mcp-google-sheets"],
+      "env": {
+        "GOOGLE_CREDENTIALS_PATH": "${workspaceFolder}/.mcp/credentials/google.json"
+      },
+      "disabled": false,
+      "description": "Track suppliers, quotes, orders, and KPIs in spreadsheets"
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@anthropics/mcp-filesystem", "${workspaceFolder}/active-deals"],
+      "disabled": false,
+      "description": "Read/write deal files, templates, and tracking data"
+    },
+    "fetch": {
+      "command": "npx",
+      "args": ["-y", "@anthropics/mcp-fetch"],
+      "disabled": false,
+      "description": "Fetch Alibaba listings, Amazon data, market research"
+    },
+    "slack": {
+      "command": "npx",
+      "args": ["-y", "@anthropics/mcp-slack"],
+      "env": {
+        "SLACK_BOT_TOKEN": "${env:SLACK_BOT_TOKEN}"
+      },
+      "disabled": true,
+      "description": "Notify on new quotes, approvals needed, order updates"
+    },
+    "postgres": {
+      "command": "npx",
+      "args": ["-y", "@anthropics/mcp-postgres"],
+      "env": {
+        "DATABASE_URL": "${env:DATABASE_URL}"
+      },
+      "disabled": true,
+      "description": "Store orders, suppliers, products, and analytics"
+    }
+  }
+}
