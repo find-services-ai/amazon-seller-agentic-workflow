@@ -3,6 +3,15 @@
 const MCP_BASE_URL = '/mcp'
 const PROTOCOL_VERSION = '2024-11-05'
 
+// Detect static hosting (GitHub Pages, Netlify, etc.) where MCP server can't run
+export function isStaticHosting() {
+  const host = window.location.hostname
+  return host.endsWith('.github.io') ||
+    host.endsWith('.netlify.app') ||
+    host.endsWith('.vercel.app') ||
+    host.endsWith('.pages.dev')
+}
+
 let sessionId = null
 
 async function mcpRequest(method, params = {}, id = Date.now()) {
@@ -100,6 +109,9 @@ export async function updateSheet({ spreadsheetId, range, values, userEmail }) {
 }
 
 export async function checkServerHealth() {
+  if (isStaticHosting()) {
+    return { connected: false, error: 'Static hosting detected — MCP server unavailable', staticHost: true }
+  }
   try {
     const info = await initSession()
     return { connected: true, serverInfo: info }

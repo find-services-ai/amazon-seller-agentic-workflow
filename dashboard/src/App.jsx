@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   Package, BarChart3, Target, Zap,
-  BookOpen, Cpu, Flag, LayoutDashboard, Plug, Send
+  BookOpen, Cpu, Flag, LayoutDashboard, Plug, Send, Search
 } from 'lucide-react'
 import Header from './components/Header'
 import KPICards from './components/KPICards'
@@ -14,12 +14,14 @@ import WorkflowRunner from './components/WorkflowRunner'
 import ActionItems from './components/ActionItems'
 import IntegrationHub from './components/IntegrationHub'
 import SupplierOutreach from './components/SupplierOutreach'
+import ProductResearchHub from './components/ProductResearchHub'
 import { pipelineData, productsData, approvalsData, activityData, kpiData } from './data/dashboardData'
 import { strategies, workflowDefinitions, actionItems } from './data/strategyData'
 import { integrations } from './data/integrationsData'
 
 const tabs = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'research', label: 'Research', icon: Search },
   { id: 'strategies', label: 'Strategies', icon: BookOpen },
   { id: 'workflows', label: 'AI Workflows', icon: Cpu },
   { id: 'actions', label: 'Action Items', icon: Flag },
@@ -148,6 +150,25 @@ function App() {
               </h2>
               <ActivityFeed activities={activityData} />
             </section>
+          </>
+        )}
+
+        {/* ===== RESEARCH TAB ===== */}
+        {activeTab === 'research' && (
+          <>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Search className="w-5 h-5 text-amazon-orange" />
+                  Product Research Hub
+                </h2>
+                <p className="text-sm text-slate-400 mt-1">
+                  Browse Amazon departments, explore subcategory opportunities, and run the 5-phase
+                  validation flow for new products. Re-run research on existing products to refresh data.
+                </p>
+              </div>
+            </div>
+            <ProductResearchHub />
           </>
         )}
 

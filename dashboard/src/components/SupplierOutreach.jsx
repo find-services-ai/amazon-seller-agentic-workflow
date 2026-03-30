@@ -5,7 +5,7 @@ import {
   Loader2, ExternalLink, Copy, Check, Star, Shield,
   Edit3, Zap
 } from 'lucide-react'
-import { checkServerHealth, initSession, sendEmail } from '../lib/mcpClient'
+import { checkServerHealth, isStaticHosting, initSession, sendEmail } from '../lib/mcpClient'
 
 const USER_EMAIL = 'celestialcuriosseller@gmail.com'
 const SPREADSHEET_ID = '11JNYh_AT_X-lzzbXf5u_37675yNBqykcd0r3HcPj9Q0'
@@ -143,7 +143,15 @@ function RatingStars({ rating }) {
   )
 }
 
-function ServerStatus({ status, onReconnect }) {
+function ServerStatus({ status, isStatic, onReconnect }) {
+  if (isStatic) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border bg-slate-500/20 border-slate-500/30">
+        <WifiOff className="w-3 h-3 text-slate-400" />
+        <span className="text-xs text-slate-400 font-medium">Demo Mode</span>
+      </div>
+    )
+  }
   return (
     <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${
       status === 'connected'
@@ -321,8 +329,14 @@ export default function SupplierOutreach() {
   const [sendingId, setSendingId] = useState(null)
   const [sendLog, setSendLog] = useState([])
   const [bulkSending, setBulkSending] = useState(false)
+  const [staticHost] = useState(() => isStaticHosting())
+  const [showMcpBanner, setShowMcpBanner] = useState(false)
 
   const connectToServer = useCallback(async () => {
+    if (staticHost) {
+      setServerStatus('disconnected')
+      return
+    }
     setServerStatus('connecting')
     try {
       const health = await checkServerHealth()
@@ -330,7 +344,7 @@ export default function SupplierOutreach() {
     } catch {
       setServerStatus('disconnected')
     }
-  }, [])
+  }, [staticHost])
 
   useEffect(() => {
     connectToServer()
@@ -338,7 +352,7 @@ export default function SupplierOutreach() {
 
   const handleSendEmail = async (supplier) => {
     if (serverStatus !== 'connected') {
-      alert('MCP server not connected. Start the server first:\nuvx workspace-mcp --single-user --tools gmail sheets --transport streamable-http')
+      setShowMcpBanner(true)
       return
     }
 
@@ -377,7 +391,7 @@ export default function SupplierOutreach() {
 
   const handleSendAll = async () => {
     if (serverStatus !== 'connected') {
-      alert('MCP server not connected. Start the server first.')
+      setShowMcpBanner(true)
       return
     }
 
@@ -414,7 +428,7 @@ export default function SupplierOutreach() {
           </div>
 
           <div className="flex items-center gap-3">
-            <ServerStatus status={serverStatus} onReconnect={connectToServer} />
+            <ServerStatus status={serverStatus} isStatic={staticHost} onReconnect={connectToServer} />
 
             <button
               onClick={handleSendAll}
@@ -462,14 +476,62 @@ export default function SupplierOutreach() {
         )}
       </div>
 
-      {/* Test mode notice */}
-      <div className="flex items-start gap-2 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-        <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-        <div className="text-xs text-amber-300">
-          <span className="font-semibold">Test Mode:</span> Emails are sent to your own inbox ({USER_EMAIL}) for verification.
-          In production, emails will be sent to each supplier's contact address from their store page.
+      {/* MCP connection banner */}
+      {showMcpBanner && (
+        <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20">
+          <WifiOff className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm text-red-300 font-medium mb-1">
+              {staticHost ? 'Email sending is not available in demo mode' : 'MCP server not connected'}
+            </p>
+            <p className="text-xs text-red-300/80 mb-2">
+              {staticHost
+                ? 'This dashboard is hosted on GitHub Pages as a read-only demo. To send emails, clone the repo and run locally with the MCP server.'
+                : 'Start the MCP server to enable email sending:'}
+            </p>
+            {!staticHost && (
+              <code className="block text-xs bg-slate-900/60 text-slate-300 px-3 py-2 rounded border border-slate-700/50 font-mono">
+                uvx workspace-mcp --single-user --tools gmail sheets --transport streamable-http
+              </code>
+            )}
+            {staticHost && (
+              <div className="flex flex-col gap-1 text-xs text-red-300/70">
+                <span>1. <code className="bg-slate-900/60 px-1.5 py-0.5 rounded font-mono text-slate-300">git clone https://github.com/find-services-ai/amazon-seller-agentic-workflow</code></span>
+                <span>2. <code className="bg-slate-900/60 px-1.5 py-0.5 rounded font-mono text-slate-300">cd dashboard && npm install && npm run dev</code></span>
+                <span>3. <code className="bg-slate-900/60 px-1.5 py-0.5 rounded font-mono text-slate-300">uvx workspace-mcp --single-user --tools gmail sheets --transport streamable-http</code></span>
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => setShowMcpBanner(false)}
+            className="text-red-400 hover:text-red-300 flex-shrink-0 p-1"
+          >
+            <XCircle className="w-4 h-4" />
+          </button>
         </div>
-      </div>
+      )}
+
+      {/* Static hosting notice (always visible on GitHub Pages) */}
+      {staticHost && !showMcpBanner && (
+        <div className="flex items-start gap-2 px-4 py-3 rounded-lg bg-slate-500/10 border border-slate-500/20">
+          <AlertTriangle className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />
+          <div className="text-xs text-slate-400">
+            <span className="font-semibold">Demo Mode:</span> You're viewing a read-only demo on GitHub Pages.
+            Email sending and MCP integrations require running locally. Preview emails below to see what gets sent.
+          </div>
+        </div>
+      )}
+
+      {/* Test mode notice */}
+      {!staticHost && (
+        <div className="flex items-start gap-2 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+          <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+          <div className="text-xs text-amber-300">
+            <span className="font-semibold">Test Mode:</span> Emails are sent to your own inbox ({USER_EMAIL}) for verification.
+            In production, emails will be sent to each supplier's contact address from their store page.
+          </div>
+        </div>
+      )}
 
       {/* Supplier list */}
       <div className="space-y-3">
