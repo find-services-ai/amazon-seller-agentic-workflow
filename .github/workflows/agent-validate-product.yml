@@ -1,0 +1,132 @@
+name: Agent — Product Validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      product:
+        description: 'Product name to validate'
+        required: true
+        type: string
+      department:
+        description: 'Amazon department/category'
+        required: false
+        type: string
+        default: 'General'
+      budget:
+        description: 'Budget in dollars'
+        required: false
+        type: string
+        default: '500'
+      target_margin:
+        description: 'Target gross margin %'
+        required: false
+        type: string
+        default: '35'
+      phases:
+        description: 'Comma-separated phases to run (demand,competition,pricing,supply-chain,risk or all)'
+        required: false
+        type: string
+        default: 'all'
+
+permissions:
+  contents: read
+  models: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Run validation phases
+        working-directory: backend
+        env:
+          LLM_PROVIDER: github
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_MODEL: gpt-4o-mini
+        run: |
+          node --input-type=module << 'SCRIPT'
+          import { runPhase } from './src/phases.js';
+
+          const product = '${{ inputs.product }}';
+          const department = '${{ inputs.department }}';
+          const budget = parseInt('${{ inputs.budget }}');
+          const targetMargin = parseInt('${{ inputs.target_margin }}');
+          const phasesInput = '${{ inputs.phases }}';
+
+          const allPhases = ['demand', 'competition', 'pricing', 'supply-chain', 'risk'];
+          const phases = phasesInput === 'all' ? allPhases : phasesInput.split(',').map(p => p.trim());
+
+          console.log(`\n🔬 Validating: ${product}`);
+          console.log(`   Department: ${department} | Budget: $${budget} | Margin: ≥${targetMargin}%`);
+          console.log(`   Phases: ${phases.join(', ')}\n`);
+
+          const results = {};
+          for (const phaseId of phases) {
+            console.log(`⏳ Running ${phaseId}...`);
+            try {
+              results[phaseId] = await runPhase(phaseId, {
+                product, department, budget, targetMargin,
+                previousResults: results
+              });
+              const r = results[phaseId];
+              console.log(`   ${r.status === 'passed' ? '✅' : r.status === 'review' ? '⚠️' : '❌'} ${phaseId}: ${r.score}/10 (${r.confidence}% confidence)`);
+              console.log(`   ${r.summary}\n`);
+            } catch (err) {
+              console.error(`   ❌ ${phaseId} FAILED: ${err.message}\n`);
+              results[phaseId] = { score: 0, confidence: 0, status: 'failed', summary: err.message };
+            }
+          }
+
+          const totalScore = Object.values(results).reduce((s, r) => s + (r.score || 0), 0);
+          const maxScore = phases.length * 10;
+          const avgConfidence = Math.round(
+            Object.values(results).reduce((s, r) => s + (r.confidence || 0), 0) / phases.length
+          );
+          const verdict = totalScore >= (phases.length * 7) ? 'PASS' : totalScore >= (phases.length * 5) ? 'REVIEW' : 'FAIL';
+
+          const report = {
+            product, department, budget, targetMargin,
+            timestamp: new Date().toISOString(),
+            totalScore, maxScore, avgConfidence, verdict,
+            phases: results
+          };
+
+          // Write results as JSON artifact
+          const fs = await import('fs');
+          fs.writeFileSync('validation-result.json', JSON.stringify(report, null, 2));
+
+          console.log(`\n${'='.repeat(50)}`);
+          console.log(`RESULT: ${verdict} — ${totalScore}/${maxScore} (${avgConfidence}% avg confidence)`);
+          console.log(`${'='.repeat(50)}\n`);
+
+          // Set output for summary
+          const summary = `## ${verdict === 'PASS' ? '✅' : verdict === 'REVIEW' ? '⚠️' : '❌'} ${product} — ${verdict}\n\n` +
+            `**Score:** ${totalScore}/${maxScore} | **Confidence:** ${avgConfidence}% | **Budget:** $${budget}\n\n` +
+            `| Phase | Score | Confidence | Status |\n|---|---|---|---|\n` +
+            Object.entries(results).map(([id, r]) =>
+              `| ${id} | ${r.score}/10 | ${r.confidence}% | ${r.status} |`
+            ).join('\n') + '\n\n' +
+            Object.entries(results).map(([id, r]) =>
+              `### ${id}\n${r.summary || 'No summary'}`
+            ).join('\n\n');
+
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
+          SCRIPT
+
+      - name: Upload validation result
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-${{ inputs.product }}-${{ github.run_id }}
+          path: backend/validation-result.json
+          retention-days: 90

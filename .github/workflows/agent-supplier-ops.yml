@@ -1,0 +1,138 @@
+name: Agent — Supplier Operations
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'Operation to run'
+        required: true
+        type: choice
+        options:
+          - generate-outreach-emails
+          - generate-counter-offer
+          - generate-listing
+          - generate-kpi-report
+      product:
+        description: 'Product name'
+        required: true
+        type: string
+      context_json:
+        description: 'JSON context (supplier info, offer details, etc.)'
+        required: false
+        type: string
+        default: '{}'
+
+permissions:
+  contents: read
+  models: read
+
+jobs:
+  operate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Run operation
+        working-directory: backend
+        env:
+          LLM_PROVIDER: github
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_MODEL: gpt-4o-mini
+        run: |
+          node --input-type=module << 'SCRIPT'
+          import {
+            generateOutreachEmail,
+            generateCounterOffer,
+            generateListingContent,
+            generateKPIReport
+          } from './src/operations.js';
+
+          const fs = await import('fs');
+          const operation = '${{ inputs.operation }}';
+          const product = '${{ inputs.product }}';
+          let context = {};
+          try {
+            context = JSON.parse('${{ inputs.context_json }}'.replace(/'/g, "'"));
+          } catch { context = {}; }
+
+          console.log(`\n🤖 Running: ${operation}`);
+          console.log(`   Product: ${product}\n`);
+
+          let result;
+          switch (operation) {
+            case 'generate-outreach-emails': {
+              const suppliers = context.suppliers || [
+                { name: 'Supplier 1', platform: 'Made-in-China' }
+              ];
+              const results = [];
+              for (const supplier of suppliers) {
+                console.log(`   📧 Generating email for ${supplier.name}...`);
+                const email = await generateOutreachEmail({
+                  product,
+                  supplier,
+                  emailType: context.emailType || 'initial',
+                  context: { budget: context.budget || 500, targetMargin: context.targetMargin || 35 }
+                });
+                results.push({ supplier: supplier.name, ...email });
+              }
+              result = { operation, product, emails: results };
+              break;
+            }
+            case 'generate-counter-offer':
+              result = await generateCounterOffer({
+                product,
+                supplier: context.supplier || {},
+                theirOffer: context.theirOffer || {},
+                targetLandedCost: context.targetLandedCost || 3,
+                budget: context.budget || 500,
+                round: context.round || 1
+              });
+              break;
+            case 'generate-listing':
+              result = await generateListingContent({
+                product,
+                category: context.category,
+                pricePoint: context.pricePoint,
+                features: context.features,
+                keywords: context.keywords
+              });
+              break;
+            case 'generate-kpi-report':
+              result = await generateKPIReport({
+                portfolio: context.portfolio,
+                period: context.period,
+                metrics: context.metrics,
+                recentActions: context.recentActions
+              });
+              break;
+            default:
+              throw new Error(`Unknown operation: ${operation}`);
+          }
+
+          fs.writeFileSync('operation-result.json', JSON.stringify(result, null, 2));
+
+          // Job summary
+          const summary = `## 🤖 ${operation}\n\n` +
+            `**Product:** ${product}\n\n` +
+            '```json\n' + JSON.stringify(result, null, 2).slice(0, 3000) + '\n```';
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
+
+          console.log('\n✅ Done. Result saved to operation-result.json');
+          SCRIPT
+
+      - name: Upload result
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.operation }}-${{ github.run_id }}
+          path: backend/operation-result.json
+          retention-days: 90
