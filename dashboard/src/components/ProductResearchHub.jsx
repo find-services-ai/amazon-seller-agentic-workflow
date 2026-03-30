@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Search, ChevronDown, ChevronUp, ExternalLink, TrendingUp,
   AlertTriangle, CheckCircle, Play, RotateCcw, Zap, Shield,
   BarChart3, Target, Package, Truck, Star, Clock, ArrowRight,
-  Filter, SortAsc, XCircle, Loader2, Eye, Lock, Info
+  Filter, SortAsc, XCircle, Loader2, Eye, Lock, Info,
+  FileSpreadsheet, Cpu
 } from 'lucide-react'
 import { amazonDepartments, scoringWeights, validationPhases, validationCriteria } from '../data/departmentData'
+import { checkAgentBackend, runResearchPhase } from '../lib/agentClient'
 
 // ─── Scoring Functions ───
 
@@ -238,20 +240,30 @@ function ResearchFlow({ department, onClose, existingProduct }) {
   const [productName, setProductName] = useState(existingProduct || '')
   const [budget, setBudget] = useState('500')
   const [targetMargin, setTargetMargin] = useState('35')
+  const [stagingStatus, setStagingStatus] = useState('idle') // idle | saving | saved | error
   const [flowState, setFlowState] = useState('setup') // setup | running | complete
   const [currentPhase, setCurrentPhase] = useState(0)
   const [phaseResults, setPhaseResults] = useState({})
   const [overallResult, setOverallResult] = useState(null)
+  const [backendStatus, setBackendStatus] = useState(null) // null=checking, false=offline, object=connected
 
   const isRerun = !!existingProduct
+  const useAgents = backendStatus && backendStatus.configured
+
+  // Check if agent backend is available
+  useEffect(() => {
+    checkAgentBackend().then(status => setBackendStatus(status || false))
+  }, [])
 
   const runValidationFlow = async () => {
     setFlowState('running')
     setCurrentPhase(0)
     setPhaseResults({})
     setOverallResult(null)
+    setStagingStatus('idle')
 
-    // Simulate sequential validation phases (in production, these call the MCP agents)
+    const collectedResults = {}
+
     for (let i = 0; i < validationPhases.length; i++) {
       setCurrentPhase(i)
       const phase = validationPhases[i]
@@ -262,44 +274,58 @@ function ResearchFlow({ department, onClose, existingProduct }) {
         [phase.id]: { status: 'running' }
       }))
 
-      // Simulate agent execution time
-      await new Promise(r => setTimeout(r, 1500 + Math.random() * 1000))
+      try {
+        let result
 
-      // Generate simulated result
-      const score = Math.floor(Math.random() * 4) + 5 // 5-9
-      const confidence = Math.floor(Math.random() * 20) + 72 // 72-92
-      const passed = score >= phase.minScore
-      const summaries = {
-        demand: `${productName || 'Product'} shows ${score >= 7 ? 'strong' : 'moderate'} demand signals. Estimated monthly search volume ${score >= 7 ? '>20K' : '10-20K'}. Google Trends ${score >= 7 ? 'growing' : 'stable'}.`,
-        competition: `Top 10 analysis shows ${score >= 6 ? 'viable entry opportunity' : 'challenging landscape'}. ${score >= 6 ? '4+' : '2'} listings with <500 reviews. Brand concentration ${score >= 6 ? 'low' : 'moderate'}.`,
-        pricing: `Target price $${12 + Math.floor(Math.random() * 8)}.99 achievable. Gross margin ${28 + score * 3}% at expected landed cost. ${passed ? 'All scenarios pass 35% guardrail.' : 'Worst-case scenario below 35% threshold.'}`,
-        'supply-chain': `${score >= 6 ? '3+' : '1-2'} suppliers found at target price. MOQ ${score >= 7 ? 'within' : 'near limit of'} budget. ${score >= 7 ? 'Dropship option available.' : 'Bulk only.'}`,
-        risk: `Weighted risk score: ${(5 - score * 0.4).toFixed(1)}/5. ${score >= 7 ? 'Low' : score >= 5 ? 'Moderate' : 'High'} overall risk. ${passed ? 'Within acceptable bounds.' : 'Recommend mitigation plan.'}`
-      }
-
-      setPhaseResults(prev => ({
-        ...prev,
-        [phase.id]: {
-          status: passed ? 'passed' : score >= phase.minScore - 1 ? 'review' : 'failed',
-          score,
-          confidence,
-          summary: summaries[phase.id]
+        if (useAgents) {
+          // Real LLM agent call via backend
+          result = await runResearchPhase({
+            phaseId: phase.id,
+            product: productName,
+            department: department?.name || 'General',
+            budget: Number(budget),
+            targetMargin: Number(targetMargin),
+            previousResults: collectedResults
+          })
+        } else {
+          // Fallback: simulated results when backend is unavailable
+          await new Promise(r => setTimeout(r, 1500 + Math.random() * 1000))
+          const score = Math.floor(Math.random() * 4) + 5
+          const confidence = Math.floor(Math.random() * 20) + 72
+          const passed = score >= phase.minScore
+          result = {
+            score,
+            confidence,
+            status: passed ? 'passed' : score >= phase.minScore - 1 ? 'review' : 'failed',
+            summary: `[Simulated] ${productName || 'Product'} scored ${score}/10 for ${phase.name.toLowerCase()}. Connect the agent backend for real AI analysis.`
+          }
         }
-      }))
 
-      // If a phase hard-fails, we can still show all results but note the failure
+        collectedResults[phase.id] = result
+        setPhaseResults(prev => ({
+          ...prev,
+          [phase.id]: {
+            status: result.status,
+            score: result.score,
+            confidence: result.confidence,
+            summary: result.summary
+          }
+        }))
+      } catch (err) {
+        collectedResults[phase.id] = { score: 0, confidence: 0, status: 'failed' }
+        setPhaseResults(prev => ({
+          ...prev,
+          [phase.id]: {
+            status: 'failed',
+            score: 0,
+            confidence: 0,
+            summary: `Error: ${err.message}`
+          }
+        }))
+      }
     }
 
-    // Calculate overall
-    const allResults = {}
-    setPhaseResults(prev => {
-      Object.assign(allResults, prev)
-      return prev
-    })
-
-    // Need a small delay to get final state
     await new Promise(r => setTimeout(r, 200))
-
     setFlowState('complete')
   }
 
@@ -326,6 +352,16 @@ function ResearchFlow({ department, onClose, existingProduct }) {
                 {department?.name || 'All Departments'} &middot; 5-Phase Validation
               </p>
             </div>
+            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-medium ${
+              backendStatus === null ? 'bg-slate-700 text-slate-400' :
+              useAgents ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+              'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+            }`}>
+              <Cpu className="w-2.5 h-2.5" />
+              {backendStatus === null ? 'Connecting...' :
+               useAgents ? `${backendStatus.model}` :
+               'Simulated Mode'}
+            </span>
           </div>
           <button
             onClick={onClose}
@@ -536,13 +572,49 @@ function ResearchFlow({ department, onClose, existingProduct }) {
                     </div>
                   )}
 
-                  <div className="flex items-center gap-2 mt-3">
+                  <div className="flex items-center gap-2 mt-3 flex-wrap">
                     <button
-                      onClick={() => { setFlowState('setup'); setPhaseResults({}); }}
+                      onClick={() => { setFlowState('setup'); setPhaseResults({}); setStagingStatus('idle'); }}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-700/50 text-slate-300 hover:bg-slate-700 transition-colors"
                     >
                       <RotateCcw className="w-3 h-3" />
                       Re-run
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!window.__researchLogStage) {
+                          setStagingStatus('error')
+                          return
+                        }
+                        setStagingStatus('saving')
+                        const verdict = totalScore >= validationCriteria.overallThreshold && failedPhases === 0
+                          ? 'PASS' : failedPhases > 0 ? 'FAIL' : 'REVIEW'
+                        const ok = await window.__researchLogStage({
+                          productName,
+                          department: department?.name || 'All',
+                          budget,
+                          targetMargin,
+                          phaseResults,
+                          totalScore,
+                          avgConfidence,
+                          verdict,
+                          notes: ''
+                        })
+                        setStagingStatus(ok ? 'saved' : 'error')
+                      }}
+                      disabled={stagingStatus === 'saving' || stagingStatus === 'saved'}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                        stagingStatus === 'saved'
+                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                          : stagingStatus === 'error'
+                            ? 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
+                            : 'bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30'
+                      } disabled:opacity-50`}
+                    >
+                      {stagingStatus === 'saving' && <><Loader2 className="w-3 h-3 animate-spin" /> Saving...</>}
+                      {stagingStatus === 'saved' && <><CheckCircle className="w-3 h-3" /> Saved to Sheet</>}
+                      {stagingStatus === 'error' && <><XCircle className="w-3 h-3" /> Retry Save</>}
+                      {stagingStatus === 'idle' && <><FileSpreadsheet className="w-3 h-3" /> Save to Research Log</>}
                     </button>
                     {totalScore >= validationCriteria.overallThreshold && failedPhases === 0 && (
                       <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition-colors">

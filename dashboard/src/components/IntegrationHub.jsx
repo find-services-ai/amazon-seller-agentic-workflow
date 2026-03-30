@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   ChevronDown, ChevronRight, ExternalLink, Copy, Check,
   Wifi, WifiOff, AlertTriangle, Settings, Play, RefreshCw,
@@ -6,9 +6,10 @@ import {
   ShoppingCart, Warehouse, Megaphone, MessageSquare, Bell,
   CheckCircle, Search, TrendingUp, Globe, Folder, File,
   Monitor, Compass, Download, Edit, GitBranch, Star,
-  Plug, Zap, Shield, Clock
+  Plug, Zap, Shield, Clock, Cpu, Github
 } from 'lucide-react'
 import { statusConfig } from '../data/integrationsData'
+import { isGitHubConfigured, setGitHubConfig } from '../lib/githubActionsClient'
 
 const iconMap = {
   mail: Mail, table: Table, 'hard-drive': HardDrive, calendar: Calendar,
@@ -310,6 +311,17 @@ function IntegrationCard({ integration }) {
 
 export default function IntegrationHub({ integrations }) {
   const [filter, setFilter] = useState('all')
+  const [ghToken, setGhToken] = useState(() => localStorage.getItem('github_pat') || '')
+  const [ghOwner, setGhOwner] = useState(() => localStorage.getItem('github_owner') || '')
+  const [ghRepo, setGhRepo] = useState(() => localStorage.getItem('github_repo') || '')
+  const [ghSaved, setGhSaved] = useState(false)
+  const ghConfigured = isGitHubConfigured()
+
+  const handleSaveGitHub = () => {
+    setGitHubConfig({ token: ghToken, owner: ghOwner, repo: ghRepo })
+    setGhSaved(true)
+    setTimeout(() => setGhSaved(false), 2000)
+  }
 
   const connected = integrations.filter(i => i.status === 'connected').length
   const ready = integrations.filter(i => i.status === 'ready').length
@@ -321,6 +333,86 @@ export default function IntegrationHub({ integrations }) {
 
   return (
     <div className="space-y-6">
+      {/* GitHub Actions Agent Config */}
+      <div className="glass-card p-4 border border-slate-700/50">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 rounded-lg bg-purple-500/20">
+            <Cpu className="w-5 h-5 text-purple-400" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+              GitHub Actions — AI Agent Engine
+              {ghConfigured && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  <CheckCircle className="w-2.5 h-2.5" /> Connected
+                </span>
+              )}
+            </h3>
+            <p className="text-xs text-slate-400">
+              Free LLM-powered agents via GitHub Models + Actions. No local server needed.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">GitHub PAT</label>
+            <input
+              type="password"
+              value={ghToken}
+              onChange={e => setGhToken(e.target.value)}
+              placeholder="ghp_..."
+              className="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-purple-500/50"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">Owner</label>
+            <input
+              type="text"
+              value={ghOwner}
+              onChange={e => setGhOwner(e.target.value)}
+              placeholder="your-username"
+              className="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-purple-500/50"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">Repository</label>
+            <input
+              type="text"
+              value={ghRepo}
+              onChange={e => setGhRepo(e.target.value)}
+              placeholder="amazon-seller-agentic-workflow"
+              className="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-purple-500/50"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 mt-3">
+          <button
+            onClick={handleSaveGitHub}
+            disabled={!ghToken || !ghOwner || !ghRepo}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30 hover:bg-purple-500/30 transition-colors disabled:opacity-40"
+          >
+            {ghSaved ? <><CheckCircle className="w-3 h-3" /> Saved</> : <><Shield className="w-3 h-3" /> Save Config</>}
+          </button>
+          <span className="text-[10px] text-slate-500">
+            PAT needs no special scopes for GitHub Models. Add <code className="text-slate-400">repo</code> + <code className="text-slate-400">workflow</code> scopes to trigger Actions.
+          </span>
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-800/50 text-xs">
+            <Zap className="w-3 h-3 text-amber-400" />
+            <span className="text-slate-400">Model:</span>
+            <span className="text-white font-medium">gpt-4o-mini (free)</span>
+          </div>
+          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-800/50 text-xs">
+            <Play className="w-3 h-3 text-blue-400" />
+            <span className="text-slate-400">Execution:</span>
+            <span className="text-white font-medium">GitHub Actions</span>
+          </div>
+        </div>
+      </div>
       {/* Summary bar */}
       <div className="grid grid-cols-3 gap-4">
         <button onClick={() => setFilter(filter === 'connected' ? 'all' : 'connected')}

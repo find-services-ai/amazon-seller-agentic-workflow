@@ -3,9 +3,10 @@ import {
   Mail, Send, CheckCircle, XCircle, Clock, AlertTriangle,
   Eye, ChevronDown, ChevronUp, Wifi, WifiOff, RefreshCw,
   Loader2, ExternalLink, Copy, Check, Star, Shield,
-  Edit3, Zap
+  Edit3, Zap, Cpu
 } from 'lucide-react'
 import { checkServerHealth, isStaticHosting, initSession, sendEmail } from '../lib/mcpClient'
+import { checkAgentBackend, generateEmail } from '../lib/agentClient'
 
 const USER_EMAIL = 'celestialcuriosseller@gmail.com'
 const SPREADSHEET_ID = '11JNYh_AT_X-lzzbXf5u_37675yNBqykcd0r3HcPj9Q0'
@@ -185,8 +186,10 @@ function ServerStatus({ status, isStatic, onReconnect }) {
   )
 }
 
-function SupplierCard({ supplier, emailStatus, onPreview, onSend, isExpanded, onToggle, isSending }) {
+function SupplierCard({ supplier, emailStatus, onPreview, onSend, isExpanded, onToggle, isSending, aiEmail, isAIGenerating, onAIGenerate, hasBackend }) {
   const status = emailStatus || 'pending'
+  const emailSubject = aiEmail?.subject || generateEmailSubject(supplier)
+  const emailBody = aiEmail?.body || generateEmailBody(supplier)
   const statusConfig = {
     pending: { icon: Clock, color: 'text-slate-400', label: 'Not Sent', bg: 'bg-slate-500/20' },
     sending: { icon: Loader2, color: 'text-blue-400', label: 'Sending...', bg: 'bg-blue-500/20' },
@@ -258,6 +261,22 @@ function SupplierCard({ supplier, emailStatus, onPreview, onSend, isExpanded, on
             {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
           </button>
 
+          {hasBackend && status !== 'sent' && (
+            <button
+              onClick={() => onAIGenerate(supplier)}
+              disabled={isAIGenerating}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                aiEmail
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                  : 'bg-purple-500/20 text-purple-400 border border-purple-500/30 hover:bg-purple-500/30'
+              } disabled:opacity-50`}
+            >
+              {isAIGenerating ? <><Loader2 className="w-3 h-3 animate-spin" /> Generating...</>
+                : aiEmail ? <><Cpu className="w-3 h-3" /> AI Drafted</>
+                : <><Cpu className="w-3 h-3" /> AI Draft</>}
+            </button>
+          )}
+
           {status === 'pending' && (
             <button
               onClick={() => onSend(supplier)}
@@ -300,6 +319,11 @@ function SupplierCard({ supplier, emailStatus, onPreview, onSend, isExpanded, on
       {/* Email Preview */}
       {isExpanded && (
         <div className="border-t border-slate-700/50 p-4 bg-slate-800/30">
+          {aiEmail && (
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded text-[10px] bg-purple-500/20 text-purple-400 border border-purple-500/30 w-fit mb-3">
+              <Cpu className="w-2.5 h-2.5" /> AI-Generated Email
+            </div>
+          )}
           <div className="space-y-2 mb-3">
             <div className="flex items-center gap-2 text-xs">
               <span className="text-slate-500 w-12">To:</span>
@@ -308,12 +332,12 @@ function SupplierCard({ supplier, emailStatus, onPreview, onSend, isExpanded, on
             </div>
             <div className="flex items-center gap-2 text-xs">
               <span className="text-slate-500 w-12">Subject:</span>
-              <span className="text-white font-medium">{generateEmailSubject(supplier)}</span>
+              <span className="text-white font-medium">{emailSubject}</span>
             </div>
           </div>
           <div className="p-3 rounded-lg bg-slate-900/50 border border-slate-700/50">
             <pre className="text-xs text-slate-300 whitespace-pre-wrap font-sans leading-relaxed">
-              {generateEmailBody(supplier)}
+              {emailBody}
             </pre>
           </div>
         </div>
@@ -331,6 +355,9 @@ export default function SupplierOutreach() {
   const [bulkSending, setBulkSending] = useState(false)
   const [staticHost] = useState(() => isStaticHosting())
   const [showMcpBanner, setShowMcpBanner] = useState(false)
+  const [aiEmails, setAiEmails] = useState({})
+  const [aiGenerating, setAiGenerating] = useState({})
+  const [backendAvailable, setBackendAvailable] = useState(false)
 
   const connectToServer = useCallback(async () => {
     if (staticHost) {
@@ -348,7 +375,31 @@ export default function SupplierOutreach() {
 
   useEffect(() => {
     connectToServer()
+    checkAgentBackend().then(status => setBackendAvailable(!!status?.configured))
   }, [connectToServer])
+
+  const handleAIGenerate = async (supplier) => {
+    setAiGenerating(prev => ({ ...prev, [supplier.id]: true }))
+    try {
+      const result = await generateEmail({
+        product: 'Self-Cleaning Pet Slicker Brush',
+        supplier: {
+          name: supplier.name,
+          platform: supplier.platform,
+          specialization: supplier.product,
+          years: supplier.audited ? '3' : undefined
+        },
+        emailType: 'initial',
+        context: { budget: 500, targetMargin: 35, quantity: Math.max(supplier.moq, 100) }
+      })
+      setAiEmails(prev => ({ ...prev, [supplier.id]: result }))
+      setExpandedSupplier(supplier.id)
+    } catch (err) {
+      console.error('AI email generation failed:', err)
+    } finally {
+      setAiGenerating(prev => ({ ...prev, [supplier.id]: false }))
+    }
+  }
 
   const handleSendEmail = async (supplier) => {
     if (serverStatus !== 'connected') {
@@ -360,10 +411,11 @@ export default function SupplierOutreach() {
     setEmailStatuses(prev => ({ ...prev, [supplier.id]: 'sending' }))
 
     try {
+      const ai = aiEmails[supplier.id]
       const result = await sendEmail({
         to: getSupplierContactEmail(),
-        subject: generateEmailSubject(supplier),
-        body: generateEmailBody(supplier),
+        subject: ai?.subject || generateEmailSubject(supplier),
+        body: ai?.body || generateEmailBody(supplier),
         userEmail: USER_EMAIL
       })
 
@@ -544,6 +596,10 @@ export default function SupplierOutreach() {
             isExpanded={expandedSupplier === supplier.id}
             onToggle={() => setExpandedSupplier(expandedSupplier === supplier.id ? null : supplier.id)}
             isSending={sendingId === supplier.id}
+            aiEmail={aiEmails[supplier.id]}
+            isAIGenerating={aiGenerating[supplier.id]}
+            onAIGenerate={handleAIGenerate}
+            hasBackend={backendAvailable}
           />
         ))}
       </div>

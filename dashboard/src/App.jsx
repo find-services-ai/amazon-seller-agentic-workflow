@@ -15,6 +15,7 @@ import ActionItems from './components/ActionItems'
 import IntegrationHub from './components/IntegrationHub'
 import SupplierOutreach from './components/SupplierOutreach'
 import ProductResearchHub from './components/ProductResearchHub'
+import ResearchLog from './components/ResearchLog'
 import { pipelineData, productsData, approvalsData, activityData, kpiData } from './data/dashboardData'
 import { strategies, workflowDefinitions, actionItems } from './data/strategyData'
 import { integrations } from './data/integrationsData'
@@ -169,6 +170,7 @@ function App() {
               </div>
             </div>
             <ProductResearchHub />
+            <ResearchLog />
           </>
         )}
 

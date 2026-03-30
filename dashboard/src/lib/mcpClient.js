@@ -108,6 +108,21 @@ export async function updateSheet({ spreadsheetId, range, values, userEmail }) {
   })
 }
 
+export async function readSheet({ spreadsheetId, range, userEmail }) {
+  return callTool('read_sheet_values', {
+    spreadsheet_id: spreadsheetId,
+    range_name: range,
+    user_google_email: userEmail
+  })
+}
+
+export async function createSpreadsheet({ title, userEmail }) {
+  return callTool('create_spreadsheet', {
+    title,
+    user_google_email: userEmail
+  })
+}
+
 export async function checkServerHealth() {
   if (isStaticHosting()) {
     return { connected: false, error: 'Static hosting detected — MCP server unavailable', staticHost: true }
