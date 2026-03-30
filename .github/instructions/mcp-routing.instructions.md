@@ -2,21 +2,21 @@
 applyTo: "**/*"
 description: "Route Amazon seller operations to appropriate MCP servers for autonomous execution."
 ---
-## MCP Server Routing
+## MCP Server Routing — Established Agentic Patterns
 
-When executing autonomous workflows, use the appropriate MCP server tools:
+When executing autonomous workflows, use the appropriate established MCP server tools:
 
-### Email Operations → gmail/*
-- Sending supplier outreach emails
-- Reading supplier responses
-- Sending follow-ups and counter-offers
-- Negotiation communications
-
-### Data Tracking → google-sheets/*
-- Logging supplier quotes
-- Updating comparison matrices
-- Recording order status
-- KPI dashboard updates
+### Email + Sheets + Drive → google-workspace (workspace-mcp)
+- **Package:** `workspace-mcp` by taylorwilsdon (2K+ stars, actively maintained)
+- **Pattern:** Desktop OAuth, auto token refresh, single-user mode
+- Sending supplier outreach emails → `send_gmail_message`
+- Reading supplier responses → `search_gmail_messages`
+- Sending follow-ups and counter-offers → `send_gmail_message`
+- Logging supplier quotes → `modify_sheet_values`
+- Updating comparison matrices → `modify_sheet_values`
+- Recording order status → `modify_sheet_values`
+- KPI dashboard updates → `read_sheet_values` / `modify_sheet_values`
+- File storage and sharing → `search_drive_files` / `create_drive_file`
 
 ### Notifications → slack/*
 - Alerting on new quotes received
@@ -25,7 +25,7 @@ When executing autonomous workflows, use the appropriate MCP server tools:
 - Urgent alerts
 
 ### Web Research → fetch/*
-- Alibaba supplier searches
+- Made-in-China.com supplier searches
 - Market research
 - Competitor analysis
 - Price monitoring
@@ -34,6 +34,12 @@ When executing autonomous workflows, use the appropriate MCP server tools:
 - Reading templates
 - Writing deal documents
 - Updating tracking files
+
+### Amazon Seller Central → amazon-ads/* + playwright/*
+- Amazon Ads campaigns → `@marketplaceadpros/amazon-ads-mcp-server`
+- Seller Central browser automation → `@anthropic/mcp-playwright`
+- Product listing management
+- Order monitoring
 
 ## Approval Flow
 

@@ -1,22 +1,15 @@
 {
   "mcpServers": {
-    "gmail": {
-      "command": "npx",
-      "args": ["-y", "@anthropics/mcp-gmail"],
+    "google-workspace": {
+      "command": "uvx",
+      "args": ["workspace-mcp", "--tool-tier", "core", "--single-user", "--tools", "gmail", "sheets", "drive"],
       "env": {
-        "GMAIL_CREDENTIALS_PATH": "${workspaceFolder}/.mcp/credentials/gmail.json"
+        "GOOGLE_OAUTH_CLIENT_ID": "${env:GOOGLE_OAUTH_CLIENT_ID}",
+        "GOOGLE_OAUTH_CLIENT_SECRET": "${env:GOOGLE_OAUTH_CLIENT_SECRET}",
+        "OAUTHLIB_INSECURE_TRANSPORT": "1"
       },
       "disabled": false,
-      "description": "Send supplier outreach emails, follow-ups, and negotiations"
-    },
-    "google-sheets": {
-      "command": "npx",
-      "args": ["-y", "@anthropics/mcp-google-sheets"],
-      "env": {
-        "GOOGLE_CREDENTIALS_PATH": "${workspaceFolder}/.mcp/credentials/google.json"
-      },
-      "disabled": false,
-      "description": "Track suppliers, quotes, orders, and KPIs in spreadsheets"
+      "description": "Google Workspace MCP (2K+ stars) — Gmail, Sheets, Drive via established agentic pattern with Desktop OAuth"
     },
     "filesystem": {
       "command": "npx",
@@ -28,7 +21,7 @@
       "command": "npx",
       "args": ["-y", "@anthropics/mcp-fetch"],
       "disabled": false,
-      "description": "Fetch Alibaba listings, Amazon data, market research"
+      "description": "Fetch supplier listings, Amazon data, market research"
     },
     "slack": {
       "command": "npx",
@@ -39,14 +32,20 @@
       "disabled": true,
       "description": "Notify on new quotes, approvals needed, order updates"
     },
-    "postgres": {
+    "amazon-ads": {
       "command": "npx",
-      "args": ["-y", "@anthropics/mcp-postgres"],
+      "args": ["-y", "@marketplaceadpros/amazon-ads-mcp-server"],
       "env": {
-        "DATABASE_URL": "${env:DATABASE_URL}"
+        "BEARER_TOKEN": "${env:AMAZON_ADS_BEARER_TOKEN}"
       },
       "disabled": true,
-      "description": "Store orders, suppliers, products, and analytics"
+      "description": "Amazon Advertising campaigns via MarketplaceAdPros MCP"
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/mcp-playwright"],
+      "disabled": true,
+      "description": "Browser automation for Amazon Seller Central operations"
     }
   }
 }

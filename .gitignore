@@ -6,6 +6,9 @@
 *.pem
 *.key
 
+# Email sender personal config (contains your name/email)
+email-sender/outreach-config.json
+
 # IDE
 .idea/
 *.swp

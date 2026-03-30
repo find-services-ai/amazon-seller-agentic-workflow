@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   Package, BarChart3, Target, Zap,
-  BookOpen, Cpu, Flag, LayoutDashboard
+  BookOpen, Cpu, Flag, LayoutDashboard, Plug, Send
 } from 'lucide-react'
 import Header from './components/Header'
 import KPICards from './components/KPICards'
@@ -12,14 +12,19 @@ import ActivityFeed from './components/ActivityFeed'
 import StrategyDeepDive from './components/StrategyDeepDive'
 import WorkflowRunner from './components/WorkflowRunner'
 import ActionItems from './components/ActionItems'
+import IntegrationHub from './components/IntegrationHub'
+import SupplierOutreach from './components/SupplierOutreach'
 import { pipelineData, productsData, approvalsData, activityData, kpiData } from './data/dashboardData'
 import { strategies, workflowDefinitions, actionItems } from './data/strategyData'
+import { integrations } from './data/integrationsData'
 
 const tabs = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'strategies', label: 'Strategies', icon: BookOpen },
   { id: 'workflows', label: 'AI Workflows', icon: Cpu },
-  { id: 'actions', label: 'Action Items', icon: Flag }
+  { id: 'actions', label: 'Action Items', icon: Flag },
+  { id: 'outreach', label: 'Outreach', icon: Send },
+  { id: 'integrations', label: 'Integrations', icon: Plug }
 ]
 
 function App() {
@@ -203,6 +208,44 @@ function App() {
               </div>
             </div>
             <ActionItems items={actions} onComplete={handleActionComplete} />
+          </>
+        )}
+
+        {/* ===== OUTREACH TAB ===== */}
+        {activeTab === 'outreach' && (
+          <>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Send className="w-5 h-5 text-amazon-orange" />
+                  Supplier Outreach
+                </h2>
+                <p className="text-sm text-slate-400 mt-1">
+                  Send inquiry emails to verified suppliers via Gmail MCP integration.
+                  Preview each email, send individually, or batch send to all suppliers.
+                </p>
+              </div>
+            </div>
+            <SupplierOutreach />
+          </>
+        )}
+
+        {/* ===== INTEGRATIONS TAB ===== */}
+        {activeTab === 'integrations' && (
+          <>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Plug className="w-5 h-5 text-amazon-orange" />
+                  Integration Hub
+                </h2>
+                <p className="text-sm text-slate-400 mt-1">
+                  Manage external service connections through established MCP servers and agentic patterns.
+                  Each integration uses production-ready, community-maintained MCP packages.
+                </p>
+              </div>
+            </div>
+            <IntegrationHub integrations={integrations} />
           </>
         )}
       </main>
