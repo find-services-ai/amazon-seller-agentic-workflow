@@ -54,7 +54,7 @@ function getClient() {
   )
 }
 
-export async function callLLM(systemPrompt, userMessage, { useThinking = false } = {}) {
+export async function callLLM(systemPrompt, userMessage, { useThinking = false, maxTokens = 2500 } = {}) {
   const { provider, github: gh, openai: oai, gemini: gem } = config.llm
   let model
   if (provider === 'gemini') {
@@ -81,7 +81,7 @@ export async function callLLM(systemPrompt, userMessage, { useThinking = false }
           { role: 'user', content: userMessage }
         ],
         temperature: 0.3,
-        max_tokens: 2500
+        max_tokens: maxTokens
       })
 
       const text = response.choices[0].message.content

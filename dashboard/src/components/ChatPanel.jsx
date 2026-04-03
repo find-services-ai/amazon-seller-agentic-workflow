@@ -1,5 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
-import { Send, Loader2, MessageCircle, X, Sparkles, Package, TrendingUp, BarChart3, Users, ChevronRight } from 'lucide-react'
+import {
+  Send, Loader2, MessageCircle, X, Sparkles, Package, TrendingUp,
+  BarChart3, Users, ChevronRight, CheckCircle, XCircle, AlertTriangle,
+  Mail, FileText, ChevronDown
+} from 'lucide-react'
 import { chat } from '../lib/platformClient'
 
 // ─── Data Card Renderers ─────────────────────────────────────
@@ -53,8 +57,228 @@ function StatsCard({ stats }) {
   )
 }
 
+// ─── Research Scorecard ──────────────────────────────────────
+
+function ResearchScorecard({ data }) {
+  const STATUS_CONFIG = {
+    passed: { icon: CheckCircle, color: 'text-status-good', bg: 'bg-status-good/10', label: 'Pass' },
+    review: { icon: AlertTriangle, color: 'text-status-warn', bg: 'bg-status-warn/10', label: 'Review' },
+    failed: { icon: XCircle, color: 'text-status-bad', bg: 'bg-status-bad/10', label: 'Fail' },
+    error: { icon: XCircle, color: 'text-text-muted', bg: 'bg-surface-overlay', label: 'Error' }
+  }
+  const VERDICT_CONFIG = {
+    PASS: { color: 'text-status-good', bg: 'bg-status-good/15', border: 'border-status-good/30' },
+    REVIEW: { color: 'text-status-warn', bg: 'bg-status-warn/15', border: 'border-status-warn/30' },
+    FAIL: { color: 'text-status-bad', bg: 'bg-status-bad/15', border: 'border-status-bad/30' }
+  }
+  const [expanded, setExpanded] = useState(null)
+  const vc = VERDICT_CONFIG[data.verdict] || VERDICT_CONFIG.FAIL
+
+  return (
+    <div className="space-y-2">
+      {/* Overall verdict */}
+      <div className={`rounded-xl p-3 border ${vc.border} ${vc.bg}`}>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className={`text-xs font-semibold uppercase tracking-wide ${vc.color}`}>{data.verdict}</div>
+            <div className="text-lg font-bold">{data.totalScore}/{data.maxScore}</div>
+          </div>
+          <div className="text-right">
+            <div className="text-[10px] text-text-muted">Confidence</div>
+            <div className="text-sm font-semibold">{data.avgConfidence}%</div>
+          </div>
+        </div>
+      </div>
+      {/* Phase breakdown */}
+      {data.phases.map((phase, i) => {
+        const sc = STATUS_CONFIG[phase.status] || STATUS_CONFIG.error
+        const Icon = sc.icon
+        const isOpen = expanded === i
+        return (
+          <div key={phase.phaseId} className="bg-surface rounded-lg overflow-hidden">
+            <button
+              onClick={() => setExpanded(isOpen ? null : i)}
+              className="w-full flex items-center gap-2.5 p-2.5 text-left"
+            >
+              <Icon className={`w-4 h-4 flex-shrink-0 ${sc.color}`} />
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-medium truncate">{phase.name}</div>
+                <div className="text-[10px] text-text-muted">{phase.agent}</div>
+              </div>
+              <div className="text-right flex-shrink-0">
+                <span className={`text-sm font-bold ${sc.color}`}>{phase.score}/10</span>
+                <span className="text-[10px] text-text-muted ml-1">{phase.confidence}%</span>
+              </div>
+              <ChevronDown className={`w-3.5 h-3.5 text-text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {isOpen && (
+              <div className="px-2.5 pb-2.5 space-y-1.5">
+                <p className="text-xs text-text-secondary">{phase.summary}</p>
+                {phase.recommendation && (
+                  <p className="text-[10px] text-text-muted italic">{phase.recommendation}</p>
+                )}
+                {phase.details && Object.keys(phase.details).length > 0 && (
+                  <div className="grid grid-cols-2 gap-1">
+                    {Object.entries(phase.details).slice(0, 6).map(([k, v]) => (
+                      <div key={k} className="bg-surface-overlay rounded px-2 py-1">
+                        <div className="text-[9px] text-text-muted truncate">{k.replace(/([A-Z])/g, ' $1').trim()}</div>
+                        <div className="text-[10px] font-medium truncate">{typeof v === 'object' ? JSON.stringify(v) : String(v)}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {phase.durationMs && (
+                  <div className="text-[9px] text-text-muted text-right">{(phase.durationMs / 1000).toFixed(1)}s</div>
+                )}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ─── Email Draft Card ────────────────────────────────────────
+
+function EmailDraft({ data }) {
+  const [showFull, setShowFull] = useState(false)
+  return (
+    <div className="bg-surface rounded-xl overflow-hidden">
+      <div className="px-3 py-2 border-b border-border-subtle flex items-center gap-2">
+        <Mail className="w-3.5 h-3.5 text-text-muted" />
+        <span className="text-xs font-medium flex-1 truncate">{data.subject}</span>
+      </div>
+      <div className="p-3">
+        <pre className={`text-xs text-text-secondary whitespace-pre-wrap font-sans leading-relaxed ${showFull ? '' : 'max-h-24 overflow-hidden'}`}>
+          {data.body}
+        </pre>
+        {data.body?.length > 200 && (
+          <button onClick={() => setShowFull(!showFull)} className="text-[10px] text-brand mt-1">
+            {showFull ? 'Show less' : 'Show full email'}
+          </button>
+        )}
+      </div>
+      {data.keyAskPoints?.length > 0 && (
+        <div className="px-3 pb-2">
+          <div className="text-[10px] text-text-muted mb-1">Key asks</div>
+          <div className="flex gap-1 flex-wrap">
+            {data.keyAskPoints.map((p, i) => (
+              <span key={i} className="text-[10px] bg-surface-overlay rounded px-1.5 py-0.5">{p}</span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Listing Preview Card ────────────────────────────────────
+
+function ListingPreview({ data }) {
+  const [showFull, setShowFull] = useState(false)
+  return (
+    <div className="bg-surface rounded-xl p-3 space-y-2">
+      <div className="flex items-start gap-2">
+        <FileText className="w-3.5 h-3.5 text-text-muted mt-0.5" />
+        <div className="flex-1 min-w-0">
+          <div className="text-xs font-medium">{data.title}</div>
+          {data.suggestedPrice && <div className="text-[10px] text-status-good">Suggested: ${data.suggestedPrice}</div>}
+        </div>
+      </div>
+      {data.bulletPoints?.length > 0 && (
+        <ul className="space-y-1">
+          {data.bulletPoints.slice(0, showFull ? undefined : 3).map((b, i) => (
+            <li key={i} className="text-[10px] text-text-secondary pl-2 border-l-2 border-brand/30">{b}</li>
+          ))}
+          {!showFull && data.bulletPoints.length > 3 && (
+            <button onClick={() => setShowFull(true)} className="text-[10px] text-brand">
+              +{data.bulletPoints.length - 3} more bullets
+            </button>
+          )}
+        </ul>
+      )}
+      {showFull && data.description && (
+        <p className="text-[10px] text-text-secondary leading-relaxed">{data.description}</p>
+      )}
+      {showFull && data.searchTerms && (
+        <div>
+          <div className="text-[9px] text-text-muted">Backend search terms</div>
+          <div className="text-[10px] text-text-secondary">{data.searchTerms}</div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── KPI Report Card ─────────────────────────────────────────
+
+function KPIReport({ data }) {
+  const [showFull, setShowFull] = useState(false)
+  return (
+    <div className="bg-surface rounded-xl p-3 space-y-2">
+      <div className="flex items-center gap-2">
+        <BarChart3 className="w-3.5 h-3.5 text-brand" />
+        <span className="text-xs font-semibold">KPI Report — {data.period}</span>
+      </div>
+      <p className="text-xs text-text-secondary leading-relaxed">{data.executiveSummary}</p>
+      {data.kpis?.length > 0 && (
+        <div className="space-y-1">
+          {data.kpis.slice(0, showFull ? undefined : 4).map((kpi, i) => (
+            <div key={i} className="flex items-center justify-between bg-surface-overlay rounded px-2 py-1.5 text-[10px]">
+              <span className="text-text-secondary">{kpi.name}</span>
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{kpi.current}</span>
+                {kpi.variance && (
+                  <span className={kpi.variance.startsWith('+') ? 'text-status-good' : 'text-status-bad'}>
+                    {kpi.variance}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {!showFull && (data.kpis?.length > 4 || data.topLeaks?.length > 0) && (
+        <button onClick={() => setShowFull(true)} className="text-[10px] text-brand">Show full report</button>
+      )}
+      {showFull && data.topLeaks?.length > 0 && (
+        <div>
+          <div className="text-[10px] text-text-muted mb-1">Top leaks</div>
+          {data.topLeaks.map((leak, i) => (
+            <div key={i} className="text-[10px] text-status-bad flex items-start gap-1">
+              <AlertTriangle className="w-2.5 h-2.5 mt-0.5 flex-shrink-0" />
+              <span>{leak}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function DataCards({ intent, data }) {
   if (!data) return null
+
+  // ─── Research Scorecard ──────────────────────────────────
+  if (intent === 'research_product' && data.phases) {
+    return <ResearchScorecard data={data} />
+  }
+
+  // ─── Email Draft ─────────────────────────────────────────
+  if (intent === 'generate_email' && data.subject) {
+    return <EmailDraft data={data} />
+  }
+
+  // ─── Generated Listing ───────────────────────────────────
+  if (intent === 'generate_listing' && data.title) {
+    return <ListingPreview data={data} />
+  }
+
+  // ─── KPI Report ──────────────────────────────────────────
+  if (intent === 'kpi_report' && data.executiveSummary) {
+    return <KPIReport data={data} />
+  }
 
   if (intent === 'get_stats') {
     return (
