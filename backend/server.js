@@ -9,6 +9,7 @@ import {
   generateListingContent,
   generateKPIReport
 } from './src/operations.js'
+import { registerUser, loginUser, generateToken, requireAuth } from './src/auth.js'
 
 const app = express()
 app.use(cors())
@@ -23,6 +24,41 @@ app.get('/api/health', (_req, res) => {
     timestamp: new Date().toISOString()
   })
 })
+
+// ─── Auth Routes (public) ────────────────────────────────────
+
+app.post('/api/auth/register', async (req, res) => {
+  const { email, password, name } = req.body
+  if (!email || !password) return res.status(400).json({ error: 'email and password required' })
+  if (password.length < 6) return res.status(400).json({ error: 'password must be at least 6 characters' })
+  try {
+    const user = await registerUser(email, password, name)
+    const token = generateToken(user)
+    res.json({ user, token })
+  } catch (err) {
+    res.status(409).json({ error: err.message })
+  }
+})
+
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body
+  if (!email || !password) return res.status(400).json({ error: 'email and password required' })
+  try {
+    const user = await loginUser(email, password)
+    const token = generateToken(user)
+    res.json({ user, token })
+  } catch (err) {
+    res.status(401).json({ error: err.message })
+  }
+})
+
+app.get('/api/auth/me', requireAuth, (req, res) => {
+  res.json({ user: req.user })
+})
+
+// ─── Protected routes below ──────────────────────────────────
+app.use('/api/research', requireAuth)
+app.use('/api/ops', requireAuth)
 
 // ─── Run Single Validation Phase ─────────────────────────────
 

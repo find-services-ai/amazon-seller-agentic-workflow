@@ -41,29 +41,26 @@ function formatTimestamp(timestamp) {
 
 export default function ActivityFeed({ activities }) {
   return (
-    <div className="glass-card p-6">
+    <div className="card">
       <div className="space-y-4">
-        {activities.map((activity, index) => {
+        {activities.map((activity) => {
           const Icon = typeIcons[activity.type] || Info
           const style = statusStyles[activity.status] || statusStyles.info
 
           return (
             <div 
               key={activity.id}
-              className={`
-                flex items-start gap-4 p-4 rounded-xl border
-                ${style.bg} ${style.border}
-              `}
+              className="flex items-start gap-3 p-3 rounded-xl bg-surface"
             >
-              <div className={`p-2 rounded-lg ${style.bg}`}>
-                <Icon className={`w-5 h-5 ${style.icon}`} />
+              <div className="p-2 rounded-lg bg-surface-overlay">
+                <Icon className={`w-4 h-4 ${style.icon}`} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
-                  <h4 className="text-sm font-medium text-white">{activity.title}</h4>
-                  <span className="text-xs text-slate-500">{formatTimestamp(activity.timestamp)}</span>
+                  <h4 className="text-sm font-medium">{activity.title}</h4>
+                  <span className="text-micro text-text-muted">{formatTimestamp(activity.timestamp)}</span>
                 </div>
-                <p className="text-sm text-slate-400">{activity.description}</p>
+                <p className="text-caption text-text-secondary">{activity.description}</p>
               </div>
             </div>
           )
@@ -71,7 +68,7 @@ export default function ActivityFeed({ activities }) {
       </div>
 
       {/* Load More */}
-      <button className="w-full mt-4 py-3 rounded-lg border border-slate-700 text-slate-400 text-sm hover:bg-slate-800/50 hover:text-white transition-colors">
+      <button className="btn-secondary w-full mt-4 text-sm">
         Load More Activity
       </button>
     </div>

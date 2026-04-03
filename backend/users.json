@@ -1,0 +1,26 @@
+[
+  {
+    "id": "mni7euf7",
+    "email": "demo@seller.ai",
+    "name": "Demo User",
+    "passwordHash": "$2b$10$YRoFtL08I.42VQuA6dnnn.LejXhKH2uAX2XmJsC7nSnpIJxM8npDW",
+    "role": "admin",
+    "createdAt": "2026-04-03T01:07:24.931Z"
+  },
+  {
+    "id": "mni7velf",
+    "email": "test@g.com",
+    "name": "test-1",
+    "passwordHash": "$2b$10$RYEXeoM2ULUgrqW5OPXuA.Lz4lEuBgsbLnRkpLM9CANjCYpqbC4Oi",
+    "role": "viewer",
+    "createdAt": "2026-04-03T01:20:17.571Z"
+  },
+  {
+    "id": "mniakoay",
+    "email": "shangari.gagan24@gmail.com",
+    "name": "shangari.gagan24",
+    "passwordHash": "$2b$10$JlhnvkEMMrT0tEpWvQJenu65P6zh.m7xNbAdcqj1uxyaMmgNIHTLq",
+    "role": "viewer",
+    "createdAt": "2026-04-03T02:35:55.786Z"
+  }
+]

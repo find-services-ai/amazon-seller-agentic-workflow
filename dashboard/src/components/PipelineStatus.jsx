@@ -28,74 +28,45 @@ const statusConfig = {
 }
 
 export default function PipelineStatus({ stages }) {
+  const completed = stages.filter(s => s.status === 'completed').length
+  const percent = Math.round((completed / stages.length) * 100)
+
   return (
-    <div className="glass-card p-6">
-      <div className="relative">
-        {/* Progress Line */}
-        <div className="absolute top-6 left-6 right-6 h-1 bg-slate-700 rounded-full">
-          <div 
-            className="h-full bg-gradient-to-r from-emerald-500 via-amber-500 to-slate-700 rounded-full transition-all duration-500"
-            style={{ width: `${(stages.filter(s => s.status === 'completed').length / stages.length) * 100}%` }}
-          />
+    <div className="card space-y-5">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-caption text-text-secondary">Progress</p>
+          <p className="text-caption text-text-secondary">{completed}/{stages.length} complete</p>
         </div>
+        <div className="h-2 bg-surface-overlay rounded-full overflow-hidden">
+          <div className="h-full bg-brand transition-all duration-300" style={{ width: `${percent}%` }} />
+        </div>
+      </div>
 
-        {/* Stages */}
-        <div className="relative flex justify-between">
-          {stages.map((stage, index) => {
-            const config = statusConfig[stage.status]
-            const Icon = config.icon
+      <div className="space-y-2">
+        {stages.map(stage => {
+          const config = statusConfig[stage.status]
+          const Icon = config.icon
 
-            return (
-              <div 
-                key={stage.id}
-                className="flex flex-col items-center text-center group"
-                style={{ width: `${100 / stages.length}%` }}
-              >
-                {/* Icon Circle */}
-                <div 
-                  className={`
-                    w-12 h-12 rounded-full flex items-center justify-center
-                    border-4 border-slate-800 transition-all duration-200
-                    ${stage.status === 'completed' ? 'bg-emerald-500' : ''}
-                    ${stage.status === 'in-progress' ? 'bg-blue-500 animate-pulse' : ''}
-                    ${stage.status === 'awaiting-approval' ? 'bg-amber-500' : ''}
-                    ${stage.status === 'pending' ? 'bg-slate-700' : ''}
-                    group-hover:scale-110
-                  `}
-                >
-                  {stage.requiresApproval && stage.status !== 'completed' ? (
-                    <Lock className="w-5 h-5 text-white" />
-                  ) : (
-                    <Icon className="w-5 h-5 text-white" />
-                  )}
-                </div>
-
-                {/* Label */}
-                <div className="mt-3 space-y-1">
-                  <p className="text-sm font-medium text-white">{stage.name}</p>
-                  <p className="text-xs text-slate-400 hidden lg:block max-w-[120px]">
-                    {stage.description}
-                  </p>
-                  {stage.score && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">
-                      {stage.score}
-                    </span>
-                  )}
-                  {stage.suppliers && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400">
-                      {stage.suppliers} suppliers
-                    </span>
-                  )}
-                  {stage.requiresApproval && stage.status !== 'completed' && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400">
-                      Needs Approval
-                    </span>
-                  )}
-                </div>
+          return (
+            <div key={stage.id} className="flex items-center gap-3 p-3 rounded-xl bg-surface">
+              <div className="w-8 h-8 rounded-lg bg-surface-overlay flex items-center justify-center">
+                {stage.requiresApproval && stage.status !== 'completed' ? (
+                  <Lock className="w-4 h-4 text-status-warn" />
+                ) : (
+                  <Icon className={`w-4 h-4 ${config.color}`} />
+                )}
               </div>
-            )
-          })}
-        </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">{stage.name}</p>
+                <p className="text-caption text-text-muted truncate">{stage.description}</p>
+              </div>
+              <span className={`text-micro px-2 py-1 rounded-lg ${stage.status === 'completed' ? 'bg-status-good/15 text-status-good' : stage.status === 'awaiting-approval' ? 'bg-status-warn/15 text-status-warn' : stage.status === 'in-progress' ? 'bg-brand/15 text-brand' : 'bg-surface-overlay text-text-muted'}`}>
+                {config.label}
+              </span>
+            </div>
+          )
+        })}
       </div>
     </div>
   )

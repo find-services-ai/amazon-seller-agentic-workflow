@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Package, BarChart3, Target, Zap,
   BookOpen, Cpu, Flag, LayoutDashboard, Plug, Send, Search
 } from 'lucide-react'
 import Header from './components/Header'
+import LoginPage from './components/LoginPage'
 import KPICards from './components/KPICards'
 import PipelineStatus from './components/PipelineStatus'
 import ProductCards from './components/ProductCards'
@@ -24,18 +25,58 @@ const tabs = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'research', label: 'Research', icon: Search },
   { id: 'strategies', label: 'Strategies', icon: BookOpen },
-  { id: 'workflows', label: 'AI Workflows', icon: Cpu },
-  { id: 'actions', label: 'Action Items', icon: Flag },
+  { id: 'workflows', label: 'Workflows', icon: Cpu },
+  { id: 'actions', label: 'Actions', icon: Flag },
   { id: 'outreach', label: 'Outreach', icon: Send },
   { id: 'integrations', label: 'Integrations', icon: Plug }
 ]
 
 function App() {
+  const [user, setUser] = useState(null)
+  const [authChecked, setAuthChecked] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
   const [products, setProducts] = useState(productsData)
   const [approvals, setApprovals] = useState(approvalsData)
   const [pipeline, setPipeline] = useState(pipelineData)
   const [actions, setActions] = useState(actionItems)
+
+  // Check for existing session on mount
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token')
+    const savedUser = localStorage.getItem('auth_user')
+    if (token && savedUser) {
+      try {
+        setUser(JSON.parse(savedUser))
+      } catch { /* invalid stored data */ }
+    }
+    setAuthChecked(true)
+  }, [])
+
+  const handleLogin = (userData, token) => {
+    localStorage.setItem('auth_token', token)
+    localStorage.setItem('auth_user', JSON.stringify(userData))
+    setUser(userData)
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('auth_user')
+    setUser(null)
+  }
+
+  // Show loading while checking auth
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="skeleton h-10 w-32" />
+      </div>
+    )
+  }
+
+  // Show login page if not authenticated
+  if (!user) {
+    return <LoginPage onLogin={handleLogin} />
+  }
 
   const handleApproval = (id, decision) => {
     setApprovals(prev =>
@@ -74,13 +115,13 @@ function App() {
   const pendingActionCount = actions.filter(a => a.status === 'pending' && a.priority === 'critical').length
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <Header />
+    <div className="min-h-screen bg-[#0a0a0a] text-text-primary">
+      <Header user={user} onLogout={handleLogout} />
 
       {/* Tab Navigation */}
-      <div className="sticky top-16 z-40 bg-slate-900/90 backdrop-blur-lg border-b border-slate-700/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex gap-1 py-2 overflow-x-auto">
+      <div className="sticky top-14 z-40 bg-[#0a0a0a]/95 backdrop-blur-md border-b border-border-subtle">
+        <div className="max-w-5xl mx-auto px-4">
+          <nav className="flex gap-1 py-2 overflow-x-auto no-scrollbar">
             {tabs.map(tab => {
               const Icon = tab.icon
               const isActive = activeTab === tab.id
@@ -91,17 +132,17 @@ function App() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`
-                    flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all
+                    flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all min-h-[44px]
                     ${isActive
-                      ? 'bg-amazon-orange/20 text-amazon-orange border border-amazon-orange/30'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                      ? 'bg-brand/15 text-brand'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-surface-overlay'
                     }
                   `}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-3.5 h-3.5" />
                   {tab.label}
                   {showBadge && (
-                    <span className="w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">
+                    <span className="w-5 h-5 rounded-full bg-status-bad text-white text-xs flex items-center justify-center font-bold">
                       {pendingActionCount}
                     </span>
                   )}
@@ -112,7 +153,15 @@ function App() {
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+
+        {/* Page Intro */}
+        <section className="space-y-3">
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Run your seller business with less effort</h1>
+          <p className="text-text-secondary max-w-2xl text-sm sm:text-body">
+            Clear steps, clear numbers, and clear decisions. Built so anyone can use it.
+          </p>
+        </section>
 
         {/* ===== OVERVIEW TAB ===== */}
         {activeTab === 'overview' && (
@@ -120,34 +169,34 @@ function App() {
             <KPICards data={kpiData} />
 
             <section>
-              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                <Zap className="w-5 h-5 text-amazon-orange" />
-                Autonomous Pipeline Status
+              <h2 className="text-title mb-4 flex items-center gap-2">
+                <Zap className="w-4 h-4 text-brand" />
+                Pipeline status
               </h2>
               <PipelineStatus stages={pipeline} />
             </section>
 
-            <div className="grid lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2">
-                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                  <Package className="w-5 h-5 text-amazon-orange" />
-                  Products in Pipeline
+            <div className="grid lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-4">
+                <h2 className="text-title flex items-center gap-2">
+                  <Package className="w-4 h-4 text-brand" />
+                  Products
                 </h2>
                 <ProductCards products={products} onVeto={handleProductVeto} />
               </div>
-              <div>
-                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                  <Target className="w-5 h-5 text-amazon-orange" />
-                  Approval Gates
+              <div className="space-y-4">
+                <h2 className="text-title flex items-center gap-2">
+                  <Target className="w-4 h-4 text-brand" />
+                  Approvals
                 </h2>
                 <ApprovalGates approvals={approvals} onDecision={handleApproval} />
               </div>
             </div>
 
             <section>
-              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-amazon-orange" />
-                Recent Activity
+              <h2 className="text-title mb-4 flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-brand" />
+                Activity
               </h2>
               <ActivityFeed activities={activityData} />
             </section>
@@ -157,15 +206,14 @@ function App() {
         {/* ===== RESEARCH TAB ===== */}
         {activeTab === 'research' && (
           <>
-            <div className="flex items-center justify-between">
+            <div className="space-y-2">
               <div>
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Search className="w-5 h-5 text-amazon-orange" />
-                  Product Research Hub
+                <h2 className="text-title flex items-center gap-2">
+                  <Search className="w-4 h-4 text-brand" />
+                  Research
                 </h2>
-                <p className="text-sm text-slate-400 mt-1">
-                  Browse Amazon departments, explore subcategory opportunities, and run the 5-phase
-                  validation flow for new products. Re-run research on existing products to refresh data.
+                <p className="text-caption text-text-secondary mt-1">
+                  Find good products fast. Validate in 5 phases.
                 </p>
               </div>
             </div>
@@ -177,15 +225,14 @@ function App() {
         {/* ===== STRATEGIES TAB ===== */}
         {activeTab === 'strategies' && (
           <>
-            <div className="flex items-center justify-between">
+            <div className="space-y-2">
               <div>
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-amazon-orange" />
-                  Strategy Deep Dive
+                <h2 className="text-title flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-brand" />
+                  Strategy
                 </h2>
-                <p className="text-sm text-slate-400 mt-1">
-                  Full reasoning chains with data sources for every decision the AI system made.
-                  Click any strategy to explore the step-by-step logic, confidence levels, and source attribution.
+                <p className="text-caption text-text-secondary mt-1">
+                  Why each decision was made.
                 </p>
               </div>
             </div>
@@ -196,15 +243,14 @@ function App() {
         {/* ===== WORKFLOWS TAB ===== */}
         {activeTab === 'workflows' && (
           <>
-            <div className="flex items-center justify-between">
+            <div className="space-y-2">
               <div>
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Cpu className="w-5 h-5 text-amazon-orange" />
-                  AI Workflow Runner
+                <h2 className="text-title flex items-center gap-2">
+                  <Cpu className="w-4 h-4 text-brand" />
+                  Workflows
                 </h2>
-                <p className="text-sm text-slate-400 mt-1">
-                  Trigger, monitor, and re-run autonomous AI workflows.
-                  Each workflow shows its steps, approval gates, agents involved, and expected outputs.
+                <p className="text-caption text-text-secondary mt-1">
+                  Run and monitor repeatable AI tasks.
                 </p>
               </div>
             </div>
@@ -218,15 +264,14 @@ function App() {
         {/* ===== ACTIONS TAB ===== */}
         {activeTab === 'actions' && (
           <>
-            <div className="flex items-center justify-between">
+            <div className="space-y-2">
               <div>
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Flag className="w-5 h-5 text-amazon-orange" />
-                  Action Items
+                <h2 className="text-title flex items-center gap-2">
+                  <Flag className="w-4 h-4 text-brand" />
+                  Actions
                 </h2>
-                <p className="text-sm text-slate-400 mt-1">
-                  Prioritized actions that need your decision. Each item shows impact analysis and reasoning
-                  for why it matters to the business.
+                <p className="text-caption text-text-secondary mt-1">
+                  What needs your attention now.
                 </p>
               </div>
             </div>
@@ -237,15 +282,14 @@ function App() {
         {/* ===== OUTREACH TAB ===== */}
         {activeTab === 'outreach' && (
           <>
-            <div className="flex items-center justify-between">
+            <div className="space-y-2">
               <div>
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Send className="w-5 h-5 text-amazon-orange" />
-                  Supplier Outreach
+                <h2 className="text-title flex items-center gap-2">
+                  <Send className="w-4 h-4 text-brand" />
+                  Outreach
                 </h2>
-                <p className="text-sm text-slate-400 mt-1">
-                  Send inquiry emails to verified suppliers via Gmail MCP integration.
-                  Preview each email, send individually, or batch send to all suppliers.
+                <p className="text-caption text-text-secondary mt-1">
+                  Contact suppliers with one click.
                 </p>
               </div>
             </div>
@@ -256,15 +300,14 @@ function App() {
         {/* ===== INTEGRATIONS TAB ===== */}
         {activeTab === 'integrations' && (
           <>
-            <div className="flex items-center justify-between">
+            <div className="space-y-2">
               <div>
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Plug className="w-5 h-5 text-amazon-orange" />
-                  Integration Hub
+                <h2 className="text-title flex items-center gap-2">
+                  <Plug className="w-4 h-4 text-brand" />
+                  Integrations
                 </h2>
-                <p className="text-sm text-slate-400 mt-1">
-                  Manage external service connections through established MCP servers and agentic patterns.
-                  Each integration uses production-ready, community-maintained MCP packages.
+                <p className="text-caption text-text-secondary mt-1">
+                  Connect Gmail, Sheets, Slack, and more.
                 </p>
               </div>
             </div>
@@ -274,10 +317,10 @@ function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-700/50 mt-12 py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center text-slate-400 text-sm">
-          <span>Amazon Seller Autonomous Operations &middot; Agentic Dashboard v2.0</span>
-          <span>Contributor: cc-agent</span>
+      <footer className="border-t border-border-subtle mt-12 py-6">
+        <div className="max-w-5xl mx-auto px-4 flex justify-between items-center text-text-muted text-caption">
+          <span>Seller Platform</span>
+          <span>Built for clear decisions</span>
         </div>
       </footer>
     </div>

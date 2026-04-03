@@ -1,53 +1,53 @@
-import { TrendingUp, DollarSign, Package, Percent, Target, BarChart3 } from 'lucide-react'
+import { TrendingUp, DollarSign, Package, Percent } from 'lucide-react'
 
 export default function KPICards({ data }) {
   const kpis = [
     {
-      label: 'Total Investment',
+      label: 'Invested',
       value: `$${data.totalInvestment}`,
       icon: DollarSign,
-      color: 'from-blue-500 to-cyan-500',
-      change: 'Budget allocated'
+      tone: 'text-text-secondary',
+      change: 'Budget set'
     },
     {
       label: 'Projected Revenue (90d)',
       value: `$${data.projectedRevenue.toLocaleString()}`,
       icon: TrendingUp,
-      color: 'from-emerald-500 to-green-500',
-      change: '+115% ROI expected'
+      tone: 'text-status-good',
+      change: '+115% ROI'
     },
     {
-      label: 'Expected Gross Margin',
+      label: 'Gross Margin',
       value: `${data.avgMargin}%`,
       icon: Percent,
-      color: 'from-amber-500 to-orange-500',
-      change: '42% worst-case'
+      tone: 'text-status-good',
+      change: 'Target above 35%'
     },
     {
-      label: 'Products Pipeline',
+      label: 'Products',
       value: data.productsInPipeline,
       icon: Package,
-      color: 'from-purple-500 to-pink-500',
-      change: '1 validated, ready'
+      tone: 'text-text-secondary',
+      change: 'In pipeline'
     }
   ]
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
       {kpis.map((kpi, index) => (
         <div 
           key={index}
-          className="glass-card p-5 hover:border-slate-600/50 transition-all duration-200"
+          className="card"
         >
-          <div className="flex items-start justify-between mb-3">
-            <div className={`p-2 rounded-lg bg-gradient-to-br ${kpi.color}`}>
-              <kpi.icon className="w-5 h-5 text-white" />
+          <div className="flex items-center justify-between mb-6">
+            <p className="text-caption text-text-secondary">{kpi.label}</p>
+            <div className="w-8 h-8 rounded-lg bg-surface-overlay flex items-center justify-center">
+              <kpi.icon className={`w-4 h-4 ${kpi.tone}`} />
             </div>
           </div>
           <div className="space-y-1">
-            <p className="text-2xl font-bold text-white">{kpi.value}</p>
-            <p className="text-sm text-slate-400">{kpi.label}</p>
-            <p className="text-xs text-slate-500">{kpi.change}</p>
+            <p className="text-2xl font-semibold tracking-tight">{kpi.value}</p>
+            <p className="text-caption text-text-muted">{kpi.change}</p>
           </div>
         </div>
       ))}

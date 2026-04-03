@@ -8,6 +8,7 @@ export default defineConfig({
     outDir: 'dist'
   },
   server: {
+    allowedHosts: true,
     proxy: {
       '/mcp': {
         target: 'http://localhost:8000',

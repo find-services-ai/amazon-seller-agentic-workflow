@@ -3,11 +3,13 @@
 @tailwind utilities;
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+  line-height: 1.6;
   font-weight: 400;
-  background-color: #0f172a;
-  color: #e2e8f0;
+  background-color: #0a0a0a;
+  color: #f5f5f5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
@@ -15,14 +17,67 @@ body {
   min-height: 100vh;
 }
 
+/* Minimal card — elevation via subtle shadow, not borders */
+.card {
+  @apply bg-surface-raised rounded-card p-6;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* Backward compatibility during component migration */
 .glass-card {
-  @apply bg-slate-800/50 backdrop-blur-lg border border-slate-700/50 rounded-xl;
+  @apply card;
 }
 
 .status-badge {
-  @apply px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide;
+  @apply px-2 py-1 rounded-lg text-micro font-medium;
 }
 
 .approval-button {
-  @apply px-6 py-3 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105;
+  @apply btn;
+}
+
+.card-interactive {
+  @apply card transition-all duration-200 cursor-pointer;
+}
+.card-interactive:hover {
+  @apply bg-surface-overlay;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+/* Buttons */
+.btn {
+  @apply inline-flex items-center justify-center gap-2 font-medium rounded-xl transition-all duration-150;
+  min-height: 44px;
+  padding: 10px 20px;
+}
+.btn-primary {
+  @apply btn bg-brand text-black hover:bg-brand-hover;
+}
+.btn-secondary {
+  @apply btn bg-surface-overlay text-text-primary hover:bg-border-subtle;
+}
+.btn-ghost {
+  @apply btn text-text-secondary hover:text-text-primary hover:bg-surface-overlay;
+}
+.btn-danger {
+  @apply btn bg-status-bad/15 text-status-bad hover:bg-status-bad/25;
+}
+.btn-success {
+  @apply btn bg-status-good/15 text-status-good hover:bg-status-good/25;
+}
+
+/* Focus ring for keyboard nav */
+:focus-visible {
+  outline: 2px solid #FF9900;
+  outline-offset: 2px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+/* Skeleton loading */
+.skeleton {
+  @apply bg-surface-overlay rounded-lg animate-pulse;
 }

@@ -13,6 +13,15 @@ import {
 
 const API_BASE = '/api'
 
+// ─── Auth Helper ─────────────────────────────────────────────
+
+function authHeaders() {
+  const token = localStorage.getItem('auth_token')
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  return headers
+}
+
 // ─── Backend Detection ───────────────────────────────────────
 
 export async function checkAgentBackend() {
@@ -47,7 +56,7 @@ export async function runResearchPhase({
 }) {
   const res = await fetch(`${API_BASE}/research/phase`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify({
       phaseId,
       product,
@@ -69,7 +78,7 @@ export async function runResearchPhase({
 export async function runFullValidation({ product, department, budget, targetMargin }) {
   const res = await fetch(`${API_BASE}/research/validate`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify({ product, department, budget, targetMargin })
   })
 
@@ -86,7 +95,7 @@ export async function runFullValidation({ product, department, budget, targetMar
 export async function generateEmail({ product, supplier, emailType, context }) {
   const res = await fetch(`${API_BASE}/ops/generate-email`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify({ product, supplier, emailType, context })
   })
   if (!res.ok) {
@@ -99,7 +108,7 @@ export async function generateEmail({ product, supplier, emailType, context }) {
 export async function generateCounterOffer({ product, supplier, theirOffer, targetLandedCost, budget, round }) {
   const res = await fetch(`${API_BASE}/ops/counter-offer`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify({ product, supplier, theirOffer, targetLandedCost, budget, round })
   })
   if (!res.ok) {
@@ -112,7 +121,7 @@ export async function generateCounterOffer({ product, supplier, theirOffer, targ
 export async function generateListing({ product, category, pricePoint, features, keywords }) {
   const res = await fetch(`${API_BASE}/ops/generate-listing`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify({ product, category, pricePoint, features, keywords })
   })
   if (!res.ok) {
@@ -125,7 +134,7 @@ export async function generateListing({ product, category, pricePoint, features,
 export async function generateKPIReport({ portfolio, period, metrics, recentActions }) {
   const res = await fetch(`${API_BASE}/ops/kpi-report`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify({ portfolio, period, metrics, recentActions })
   })
   if (!res.ok) {

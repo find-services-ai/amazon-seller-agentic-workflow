@@ -21,6 +21,11 @@ export default {
     anthropic: {
       apiKey: process.env.ANTHROPIC_API_KEY,
       model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514'
+    },
+    gemini: {
+      apiKey: process.env.GEMINI_API_KEY,
+      model: process.env.GEMINI_MODEL || 'gemini-2.5-pro-preview-05-06',
+      thinkingModel: process.env.GEMINI_THINKING_MODEL || 'gemini-2.5-pro-preview-05-06'
     }
   },
   github: {
@@ -29,5 +34,9 @@ export default {
     repo: process.env.GITHUB_REPO || ''
   },
   mcpServerUrl: process.env.MCP_SERVER_URL || 'http://localhost:8000',
-  repoRoot: join(__dirname, '..', '..')
+  repoRoot: join(__dirname, '..', '..'),
+  auth: {
+    jwtSecret: process.env.JWT_SECRET || 'amazon-seller-ops-2026',
+    sessionHours: parseInt(process.env.SESSION_HOURS || '72')
+  }
 }
