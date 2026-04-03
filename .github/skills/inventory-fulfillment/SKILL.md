@@ -1,4 +1,5 @@
 ---
+name: inventory-fulfillment
 description: "Use when managing Amazon inventory, forecasting demand, calculating reorder points, managing FBA shipments, and optimizing storage costs. Covers replenishment planning, stranded inventory recovery, and aged inventory liquidation."
 ---
 # Inventory & Fulfillment Skill
@@ -17,6 +18,14 @@ Minimize stockouts and overstock while maximizing inventory turnover and minimiz
 ### Reorder Point Formula
 ```
 Reorder Point = (Daily Sales × Lead Time Days) + Safety Stock
+
+# Statistical formula (use when ≥90 days sales history):
+Safety Stock = z × σ_d × √L
+  z = service level z-score (1.65 for 95%, 1.28 for 90%)
+  σ_d = standard deviation of daily demand
+  L = lead time in days
+
+# Simplified fallback (use for new products with <90 days data):
 Safety Stock = Daily Sales × Lead Time Variance Days × 1.5
 ```
 
@@ -31,13 +40,17 @@ Safety Stock = Daily Sales × Lead Time Variance Days × 1.5
 - Create shipments 3 days before inventory hits reorder point
 - Prefer sea freight for orders >500 units (60-70% cheaper)
 - Use air freight only for emergency restocks (<100 units)
-- Always ship to single fulfillment center (avoid split shipments)
+- Always ship to single fulfillment center when cost-effective (note: Amazon charges an Inventory Placement Service fee for this — compare against the cost/complexity of split shipments to decide)
 
 ### Storage Cost Optimization
-- Monthly storage: $0.87/cubic ft (Jan-Sep), $2.40/cubic ft (Oct-Dec)
-- Aged inventory surcharge: extra fees at 181+ days
+- Monthly storage (2025 standard-size rates, verify annually):
+  - Jan-Sep: ~$0.78/cubic ft
+  - Oct-Dec (peak): ~$2.40/cubic ft
+  - **Note:** Amazon updates storage fees annually. Always verify current rates at Seller Central → FBA Fee Schedule before planning.
+- Aged inventory surcharge: extra fees starting at 181+ days, increasing at 271+ and 365+ days
 - Target: sell through inventory within 90 days
 - Liquidate or remove aged inventory before 181-day surcharge
+- Low-inventory-level fee: Amazon may charge if inventory levels are too low relative to demand — balance between overstocking and understocking
 
 ### Stranded Inventory
 - Check for stranded inventory weekly (no active listing)

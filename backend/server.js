@@ -10,6 +10,14 @@ import {
   generateKPIReport
 } from './src/operations.js'
 import { registerUser, loginUser, generateToken, requireAuth } from './src/auth.js'
+import { enforceAgentRunLimit, incrementAgentRuns } from './src/billing.js'
+import { search as vectorSearch, getStats as vectorStats } from './src/vectorStore.js'
+import catalogRoutes from './src/routes/catalog.js'
+import trendsRoutes from './src/routes/trends.js'
+import storeRoutes from './src/routes/store.js'
+import billingRoutes from './src/routes/billing.js'
+import chatRoutes from './src/routes/chat.js'
+import './src/db.js' // Initialize database on startup
 
 const app = express()
 app.use(cors())
@@ -59,11 +67,23 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
 // ─── Protected routes below ──────────────────────────────────
 app.use('/api/research', requireAuth)
 app.use('/api/ops', requireAuth)
+app.use('/api/catalog', requireAuth, catalogRoutes)
+app.use('/api/trends', requireAuth, trendsRoutes)
+app.use('/api/store', requireAuth, storeRoutes)
+app.use('/api/billing', requireAuth, billingRoutes)
+app.use('/api/chat', requireAuth, chatRoutes)
+
+// Public storefront endpoint (no auth)
+app.get('/api/storefront/:storeSlug', (req, res, next) => {
+  // Re-route to store's public endpoint
+  req.url = `/public/${req.params.storeSlug}`
+  storeRoutes.handle(req, res, next)
+})
 
 // ─── Run Single Validation Phase ─────────────────────────────
 
-app.post('/api/research/phase', async (req, res) => {
-  const { phaseId, product, department, budget, targetMargin, previousResults } = req.body
+app.post('/api/research/phase', enforceAgentRunLimit, async (req, res) => {
+  const { phaseId, product, department, budget, targetMargin, previousResults, productId } = req.body
 
   if (!product) return res.status(400).json({ error: 'product is required' })
   if (!phaseId) return res.status(400).json({ error: 'phaseId is required' })
@@ -77,11 +97,16 @@ app.post('/api/research/phase', async (req, res) => {
   try {
     const result = await runPhase(phaseId, {
       product,
+      productId: productId || null,
       department,
       budget: budget || 500,
       targetMargin: targetMargin || 35,
       previousResults
     })
+    // Track usage
+    if (req.seller) {
+      incrementAgentRuns(req.seller.id, result.tokensUsed || 0)
+    }
     res.json(result)
   } catch (err) {
     console.error(`[Phase ${phaseId}] Error:`, err.message)
@@ -106,6 +131,7 @@ app.post('/api/research/validate', async (req, res) => {
     for (const phaseId of phaseIds) {
       results[phaseId] = await runPhase(phaseId, {
         product,
+        productId: req.body.productId || null,
         department,
         budget: budget || 500,
         targetMargin: targetMargin || 35,
@@ -223,11 +249,43 @@ app.post('/api/ops/kpi-report', requireLLM, async (req, res) => {
   }
 })
 
+// ─── Vector Search Endpoints ─────────────────────────────────
+
+// Semantic search across all stored embeddings
+app.post('/api/research/vector-search', requireLLM, async (req, res) => {
+  const { query, type, productId, phaseId, limit } = req.body
+  if (!query) return res.status(400).json({ error: 'query is required' })
+
+  try {
+    const results = await vectorSearch(query, {
+      limit: Math.min(limit || 5, 20),
+      type: type || null,
+      productId: productId || null,
+      phaseId: phaseId || null
+    })
+    res.json({ results })
+  } catch (err) {
+    console.error('[Vector Search] Error:', err.message)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Vector store stats
+app.get('/api/research/vector-stats', (req, res) => {
+  try {
+    res.json(vectorStats())
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // ─── Boot ────────────────────────────────────────────────────
 
 app.listen(config.port, () => {
   const info = getProviderInfo()
-  console.log(`\n🚀 Agent backend running on http://localhost:${config.port}`)
+  console.log(`\n🚀 Seller Platform backend on http://localhost:${config.port}`)
   console.log(`   LLM: ${info.configured ? `✅ ${info.provider} (${info.model})` : '❌ NOT CONFIGURED — copy .env.example to .env'}`)
+  console.log(`   Database: ✅ SQLite (WAL mode)`)
+  console.log(`   API: /api/catalog, /api/trends, /api/store, /api/research, /api/ops`)
   console.log(`   Health: http://localhost:${config.port}/api/health\n`)
 })

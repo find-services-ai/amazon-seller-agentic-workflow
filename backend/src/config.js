@@ -2,9 +2,8 @@ import { config as loadEnv } from 'dotenv'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 
-loadEnv()
-
 const __dirname = dirname(fileURLToPath(import.meta.url))
+loadEnv({ path: join(__dirname, '..', '.env') })
 
 export default {
   port: parseInt(process.env.PORT || '3001'),

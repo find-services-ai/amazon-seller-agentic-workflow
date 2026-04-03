@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import {
   Package, BarChart3, Target, Zap,
-  BookOpen, Cpu, Flag, LayoutDashboard, Plug, Send, Search
+  BookOpen, Cpu, Flag, LayoutDashboard, Plug, Send, Search,
+  TrendingUp, Store, ShoppingBag
 } from 'lucide-react'
 import Header from './components/Header'
 import LoginPage from './components/LoginPage'
@@ -17,13 +18,20 @@ import IntegrationHub from './components/IntegrationHub'
 import SupplierOutreach from './components/SupplierOutreach'
 import ProductResearchHub from './components/ProductResearchHub'
 import ResearchLog from './components/ResearchLog'
+import ProductCatalog from './components/ProductCatalog'
+import TrendDiscovery from './components/TrendDiscovery'
+import SellerStore from './components/SellerStore'
+import ChatPanel, { ChatFAB } from './components/ChatPanel'
 import { pipelineData, productsData, approvalsData, activityData, kpiData } from './data/dashboardData'
 import { strategies, workflowDefinitions, actionItems } from './data/strategyData'
 import { integrations } from './data/integrationsData'
 
 const tabs = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'catalog', label: 'Catalog', icon: Package },
+  { id: 'trends', label: 'Trends', icon: TrendingUp },
   { id: 'research', label: 'Research', icon: Search },
+  { id: 'store', label: 'Store', icon: Store },
   { id: 'strategies', label: 'Strategies', icon: BookOpen },
   { id: 'workflows', label: 'Workflows', icon: Cpu },
   { id: 'actions', label: 'Actions', icon: Flag },
@@ -39,6 +47,7 @@ function App() {
   const [approvals, setApprovals] = useState(approvalsData)
   const [pipeline, setPipeline] = useState(pipelineData)
   const [actions, setActions] = useState(actionItems)
+  const [chatOpen, setChatOpen] = useState(false)
 
   // Check for existing session on mount
   useEffect(() => {
@@ -157,9 +166,9 @@ function App() {
 
         {/* Page Intro */}
         <section className="space-y-3">
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Run your seller business with less effort</h1>
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Your seller platform, one place for everything</h1>
           <p className="text-text-secondary max-w-2xl text-sm sm:text-body">
-            Clear steps, clear numbers, and clear decisions. Built so anyone can use it.
+            Discover products, validate ideas, source from suppliers, list on Amazon or your own store, and track every order — all powered by AI agents.
           </p>
         </section>
 
@@ -203,6 +212,42 @@ function App() {
           </>
         )}
 
+        {/* ===== CATALOG TAB ===== */}
+        {activeTab === 'catalog' && (
+          <>
+            <div className="space-y-2">
+              <div>
+                <h2 className="text-title flex items-center gap-2">
+                  <Package className="w-4 h-4 text-brand" />
+                  Product Catalog
+                </h2>
+                <p className="text-caption text-text-secondary mt-1">
+                  All your products in one place. Add ideas, track validation, and manage across channels.
+                </p>
+              </div>
+            </div>
+            <ProductCatalog />
+          </>
+        )}
+
+        {/* ===== TRENDS TAB ===== */}
+        {activeTab === 'trends' && (
+          <>
+            <div className="space-y-2">
+              <div>
+                <h2 className="text-title flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-brand" />
+                  Trend Discovery
+                </h2>
+                <p className="text-caption text-text-secondary mt-1">
+                  Spot rising products and market opportunities before everyone else.
+                </p>
+              </div>
+            </div>
+            <TrendDiscovery />
+          </>
+        )}
+
         {/* ===== RESEARCH TAB ===== */}
         {activeTab === 'research' && (
           <>
@@ -219,6 +264,24 @@ function App() {
             </div>
             <ProductResearchHub />
             <ResearchLog />
+          </>
+        )}
+
+        {/* ===== STORE TAB ===== */}
+        {activeTab === 'store' && (
+          <>
+            <div className="space-y-2">
+              <div>
+                <h2 className="text-title flex items-center gap-2">
+                  <Store className="w-4 h-4 text-brand" />
+                  Your Store
+                </h2>
+                <p className="text-caption text-text-secondary mt-1">
+                  Manage your storefront, listings, and orders across Amazon and your own shop.
+                </p>
+              </div>
+            </div>
+            <SellerStore />
           </>
         )}
 
@@ -319,10 +382,18 @@ function App() {
       {/* Footer */}
       <footer className="border-t border-border-subtle mt-12 py-6">
         <div className="max-w-5xl mx-auto px-4 flex justify-between items-center text-text-muted text-caption">
-          <span>Seller Platform</span>
-          <span>Built for clear decisions</span>
+          <span>Seller Platform · Agentic E-Commerce</span>
+          <span>Every seller sells, every buyer buys</span>
         </div>
       </footer>
+
+      {/* Chat */}
+      <ChatFAB onClick={() => setChatOpen(true)} />
+      <ChatPanel
+        isOpen={chatOpen}
+        onClose={() => setChatOpen(false)}
+        onNavigate={(tab) => { setActiveTab(tab); setChatOpen(false) }}
+      />
     </div>
   )
 }

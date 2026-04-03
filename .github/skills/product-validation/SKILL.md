@@ -38,13 +38,19 @@ Validates product opportunities through multi-phase research before committing c
 - [ ] Search volume > 10,000 monthly (estimated)
 - [ ] Google Trends stable or growing (not declining)
 - [ ] Not purely seasonal (or we're in-season)
-- [ ] Review velocity on competitors > 50/month (indicates demand)
+- [ ] Review velocity meets category-appropriate threshold:
+  - High-volume commodity: >30/month
+  - Mid-volume consumer goods: >15/month
+  - Niche/specialty: >5/month
+  - New/emerging: >3/month
+  - Adjust for price point (higher price = lower velocity is acceptable)
 
 **Kill Criteria:**
 - BSR > 50,000 (low demand)
 - Google Trends declining > 20% YoY
 - Category is seasonal and we're out of season
-- Total reviews on top 10 listings < 1,000 (immature market)
+- Total reviews on top 10 listings < 500 (immature/risky market)
+- Zero review velocity on most top listings (dead niche)
 
 ## Phase 2: Competition Analysis
 
@@ -57,15 +63,15 @@ Validates product opportunities through multi-phase research before committing c
 - Listing quality scores
 
 **Pass Criteria:**
-- [ ] At least 3 listings in top 10 have < 500 reviews
+- [ ] At least 3 listings in top 10 have < 500 reviews (entry opportunity)
 - [ ] No dominant brand with > 50% market share signals
-- [ ] Average listing age < 3 years
+- [ ] Review-based maturity is favorable (top-10 median ≤300 reviews)
 - [ ] Opportunity for differentiation exists
 - [ ] Not gated category / no IP barriers
 
 **Kill Criteria:**
 - Top 5 all have > 5,000 reviews (too entrenched)
-- Single brand dominates (Amazon Basics, major brand)
+- Single brand dominates (Amazon Basics, major brand) with >75% revenue share
 - Patent/trademark risks identified
 - Category requires certifications we can't get
 
@@ -74,11 +80,12 @@ Validates product opportunities through multi-phase research before committing c
 **Calculate:**
 ```
 Target Selling Price = Competitor median price × 0.95
-Amazon Referral Fee = Selling Price × 15%
-FBA Fee (if applicable) = Based on size/weight tier
+Amazon Referral Fee = Look up current rate for specific category (DO NOT hardcode %)
+FBA Fee (if applicable) = Based on size/weight tier (use Amazon Revenue Calculator)
 Maximum Acceptable Landed Cost = Selling Price - Referral Fee - FBA Fee - Target Profit
 
-Target Profit = Selling Price × 25% minimum
+Target Gross Profit = Selling Price × 25% minimum (pre-ad-spend)
+Target Contribution Margin = ≥18% after ads and returns (per guardrails)
 ```
 
 **Pass Criteria:**

@@ -99,3 +99,32 @@ export async function callLLM(systemPrompt, userMessage, { useThinking = false }
     }
   }
 }
+
+// ─── Embedding generation ────────────────────────────────────
+
+const EMBEDDING_MODELS = {
+  gemini: 'gemini-embedding-001',        // 3072 native, supports dimension reduction
+  github: 'openai/text-embedding-3-small',
+  openai: 'text-embedding-3-small',
+  anthropic: 'text-embedding-3-small'    // falls back to OpenAI-compat
+}
+
+const EMBEDDING_DIM = 768
+
+export async function getEmbedding(text) {
+  const llmClient = getClient()
+  const { provider } = config.llm
+  const model = EMBEDDING_MODELS[provider] || EMBEDDING_MODELS.openai
+
+  // Truncate to ~8k tokens worth of text (~32k chars) to stay within limits
+  const truncated = text.length > 32000 ? text.slice(0, 32000) : text
+
+  const response = await llmClient.embeddings.create({
+    model,
+    input: truncated,
+    dimensions: EMBEDDING_DIM
+  })
+  return response.data[0].embedding
+}
+
+export { EMBEDDING_DIM }

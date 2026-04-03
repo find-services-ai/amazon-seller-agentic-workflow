@@ -1,4 +1,5 @@
 ---
+name: supplier-management
 description: "Use when managing supplier relationships end-to-end: discovery, outreach, negotiation, quality control, and ongoing re-ordering. Covers multi-supplier strategies, MOQ optimization, and landed cost reduction."
 ---
 # Supplier Management Skill
@@ -10,9 +11,11 @@ Automate and optimize the full supplier lifecycle from discovery through ongoing
 
 ### 1. Supplier Discovery
 - Search Made-in-China.com, Alibaba, 1688 for matching suppliers
+- Search domestic sources: ThomasNet, Wholesale Central, local distributors, trade show directories
 - Score suppliers on: years in business, trade assurance, response rate, verified status
 - Build comparison matrices with landed cost estimates
 - Identify dropship-capable suppliers (no inventory risk)
+- Consider domestic suppliers for: faster lead times, lower MOQ, no duties/customs, simpler logistics
 
 ### 2. Outreach Automation
 - Generate personalized initial inquiry emails

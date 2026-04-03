@@ -1,5 +1,6 @@
 import { callLLM } from './llm.js'
 import { loadAgentPrompt, loadSkillContext } from './agents.js'
+import { getRelevantContext, storeResearch } from './vectorStore.js'
 
 const MIN_SCORES = {
   demand: 6,
@@ -155,7 +156,18 @@ export async function runPhase(phaseId, params) {
     throw new Error(`No agent prompt found for phase: ${phaseId}. Check .github/agents/ directory.`)
   }
 
-  const systemPrompt = buildSystemPrompt(phaseId, agentPrompt)
+  // RAG: inject relevant past research into the system prompt
+  let ragContext = ''
+  try {
+    ragContext = await getRelevantContext(
+      { id: params.productId, name: params.product },
+      phaseId
+    )
+  } catch (e) {
+    console.log(`[Phases] RAG context skipped: ${e.message}`)
+  }
+
+  const systemPrompt = buildSystemPrompt(phaseId, agentPrompt) + (ragContext ? `\n\n${ragContext}` : '')
   const userMessage = buildUserPrompt(phaseId, params)
 
   const result = await callLLM(systemPrompt, userMessage)
@@ -168,7 +180,7 @@ export async function runPhase(phaseId, params) {
     : score >= minScore - 1 ? 'review'
     : 'failed'
 
-  return {
+  const phaseResult = {
     score,
     confidence,
     status,
@@ -178,4 +190,13 @@ export async function runPhase(phaseId, params) {
     recommendation: result.recommendation || '',
     phaseId
   }
+
+  // Store result in vector store for future RAG (fire-and-forget)
+  if (params.productId) {
+    storeResearch(params.productId, phaseId, phaseResult).catch(e =>
+      console.log(`[Phases] Vector store skipped: ${e.message}`)
+    )
+  }
+
+  return phaseResult
 }

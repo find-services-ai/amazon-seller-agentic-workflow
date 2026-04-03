@@ -21,6 +21,12 @@ Thumbs.db
 # Node
 node_modules/
 
+# SQLite database files
+backend/data/
+*.db
+*.db-wal
+*.db-shm
+
 # Logs
 *.log
 logs/

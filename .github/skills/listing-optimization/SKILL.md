@@ -1,4 +1,5 @@
 ---
+name: listing-optimization
 description: "Use when creating, optimizing, or auditing Amazon product listings. Covers title optimization, bullet points, descriptions, backend search terms, A+ content, and image strategy for maximum conversion and organic ranking."
 ---
 # Listing Optimization Skill
@@ -27,8 +28,9 @@ Create and continuously optimize Amazon product listings to maximize conversion 
 - Address return risk factors proactively
 - Close with call-to-action
 
-### 4. Backend Search Terms (250 characters max)
+### 4. Backend Search Terms (249 bytes max)
 - Space-separated, no commas
+- Note: limit is 249 bytes, not characters — multibyte characters (accented, CJK) use 2-4 bytes each
 - No brand names (trademark risk)
 - Include misspellings, synonyms, Spanish translations
 - No words already in title/bullets (waste of space)
