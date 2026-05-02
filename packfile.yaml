@@ -1,0 +1,25 @@
+# [BSL] AgentOS Amazon Seller Pack manifest
+pack_id: amazon-seller
+name: "Amazon Seller Pack"
+version: "1.0.0"
+description: "Autonomous Amazon FBA product research, validation, supplier outreach, and listing generation."
+billing_unit: agent_run
+tier_required: STARTER
+transport: rest
+agents:
+  - demand-researcher
+  - competition-analyst
+  - pricing-strategist
+  - supply-chain-analyst
+  - risk-assessor
+keywords:
+  - amazon
+  - fba
+  - asin
+  - seller
+  - listing
+  - supplier
+  - bsr
+  - product research
+  - sourcing
+license: BSL-1.1
