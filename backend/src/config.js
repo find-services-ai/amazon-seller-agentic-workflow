@@ -33,6 +33,11 @@ export default {
     repo: process.env.GITHUB_REPO || ''
   },
   mcpServerUrl: process.env.MCP_SERVER_URL || 'http://localhost:8000',
+  instagram: {
+    appId: process.env.META_APP_ID,
+    appSecret: process.env.META_APP_SECRET,
+    graphApiVersion: process.env.INSTAGRAM_GRAPH_API_VERSION || 'v21.0'
+  },
   repoRoot: join(__dirname, '..', '..'),
   auth: {
     jwtSecret: process.env.JWT_SECRET || 'amazon-seller-ops-2026',
