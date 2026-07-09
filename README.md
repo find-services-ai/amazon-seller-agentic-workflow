@@ -82,23 +82,36 @@ dashboard/                     # Investor dashboard (React)
 │   └── data/
 └── README.md
 
+backend/                       # Seller platform API (Node/Express/SQLite)
+├── src/
+│   ├── routes/                # catalog, trends, store, billing, chat, social
+│   └── integrations/          # Meta Graph API client
+├── scripts/
+│   └── smoke-test-instagram.sh
+└── README.md
+
 scripts/
 └── sync-dashboard-data.js     # Data sync for dashboard
 ```
 
 ## 🚀 Getting Started
 
-### 1. Enable GitHub Pages
+### 1. Run the Backend API
+
+See [backend/README.md](backend/README.md) for setup, auth, and the Instagram
+content/publishing pipeline.
+
+### 2. Enable GitHub Pages
 
 1. Go to repo **Settings → Pages**
 2. Set Source to **GitHub Actions**
 3. Push changes to deploy dashboard
 
-### 2. Configure MCP Servers
+### 3. Configure MCP Servers
 
 See `.vscode/mcp.json` for Gmail, Google Sheets, and Slack integration.
 
-### 3. Run Autonomous Workflow
+### 4. Run Autonomous Workflow
 
 Use the **Amazon Seller Operator** agent in VS Code:
 ```
