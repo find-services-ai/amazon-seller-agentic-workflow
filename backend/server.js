@@ -17,13 +17,23 @@ import trendsRoutes from './src/routes/trends.js'
 import storeRoutes from './src/routes/store.js'
 import billingRoutes from './src/routes/billing.js'
 import chatRoutes from './src/routes/chat.js'
+import packRouter from './src/pack_adapter.js'
+import { mountHealth } from './src/pack_health.js'
 import './src/db.js' // Initialize database on startup
 
 const app = express()
 app.use(cors())
 app.use(express.json())
 
-// ─── Health Check ────────────────────────────────────────────
+// ─── AgentOS Pack Protocol (no auth — server-to-server) ──────────────
+// /health         → AgentOS health check
+// /pack/manifest  → pack manifest JSON
+// /pack/run       → run a goal
+// /pack/billing/consume → record usage
+mountHealth(app)
+app.use('/pack', packRouter)
+
+// ─── Health Check ────────────────────────────────────────
 
 app.get('/api/health', (_req, res) => {
   res.json({
@@ -33,7 +43,7 @@ app.get('/api/health', (_req, res) => {
   })
 })
 
-// ─── Auth Routes (public) ────────────────────────────────────
+// ─── Auth Routes (public) ──────────────────────────────────
 
 app.post('/api/auth/register', async (req, res) => {
   const { email, password, name } = req.body
@@ -64,7 +74,7 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
   res.json({ user: req.user })
 })
 
-// ─── Protected routes below ──────────────────────────────────
+// ─── Protected routes below ────────────────────────────────
 app.use('/api/research', requireAuth)
 app.use('/api/ops', requireAuth)
 app.use('/api/catalog', requireAuth, catalogRoutes)
@@ -75,7 +85,6 @@ app.use('/api/chat', requireAuth, chatRoutes)
 
 // Public storefront endpoint (no auth)
 app.get('/api/storefront/:storeSlug', (req, res, next) => {
-  // Re-route to store's public endpoint
   req.url = `/public/${req.params.storeSlug}`
   storeRoutes.handle(req, res, next)
 })
@@ -103,7 +112,6 @@ app.post('/api/research/phase', enforceAgentRunLimit, async (req, res) => {
       targetMargin: targetMargin || 35,
       previousResults
     })
-    // Track usage
     if (req.seller) {
       incrementAgentRuns(req.seller.id, result.tokensUsed || 0)
     }
@@ -114,15 +122,13 @@ app.post('/api/research/phase', enforceAgentRunLimit, async (req, res) => {
   }
 })
 
-// ─── Run Full Validation (all 5 phases) ──────────────────────
+// ─── Run Full Validation (all 5 phases) ────────────────────────
 
 app.post('/api/research/validate', async (req, res) => {
   const { product, department, budget, targetMargin } = req.body
 
   if (!product) return res.status(400).json({ error: 'product is required' })
-  if (!isConfigured()) {
-    return res.status(503).json({ error: 'LLM not configured' })
-  }
+  if (!isConfigured()) return res.status(503).json({ error: 'LLM not configured' })
 
   const phaseIds = ['demand', 'competition', 'pricing', 'supply-chain', 'risk']
   const results = {}
@@ -145,11 +151,7 @@ app.post('/api/research/validate', async (req, res) => {
     )
 
     res.json({
-      product,
-      department,
-      totalScore,
-      maxScore: 50,
-      avgConfidence,
+      product, department, totalScore, maxScore: 50, avgConfidence,
       verdict: totalScore >= 35 ? 'PASS' : totalScore >= 25 ? 'REVIEW' : 'FAIL',
       phases: results
     })
@@ -159,9 +161,8 @@ app.post('/api/research/validate', async (req, res) => {
   }
 })
 
-// ─── Start Server ────────────────────────────────────────────
+// ─── LLM guard ────────────────────────────────────────────────
 
-// Guard: LLM required for operational endpoints
 function requireLLM(req, res, next) {
   if (!isConfigured()) {
     return res.status(503).json({ error: 'LLM not configured. Copy .env.example to .env and add your API key.' })
@@ -169,123 +170,59 @@ function requireLLM(req, res, next) {
   next()
 }
 
-// ─── Operational Endpoints ───────────────────────────────────
+// ─── Operational Endpoints ───────────────────────────────────────
 
-// Generate supplier outreach email
 app.post('/api/ops/generate-email', requireLLM, async (req, res) => {
   const { product, supplier, emailType, context } = req.body
   if (!product) return res.status(400).json({ error: 'product is required' })
-
   try {
-    const result = await generateOutreachEmail({
-      product,
-      supplier: supplier || {},
-      emailType: emailType || 'initial',
-      context: context || {}
-    })
-    res.json(result)
-  } catch (err) {
-    console.error('[Generate Email] Error:', err.message)
-    res.status(500).json({ error: err.message })
-  }
+    res.json(await generateOutreachEmail({ product, supplier: supplier || {}, emailType: emailType || 'initial', context: context || {} }))
+  } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// Generate negotiation counter-offer
 app.post('/api/ops/counter-offer', requireLLM, async (req, res) => {
   const { product, supplier, theirOffer, targetLandedCost, budget, round } = req.body
   if (!product || !theirOffer) return res.status(400).json({ error: 'product and theirOffer are required' })
-
   try {
-    const result = await generateCounterOffer({
-      product,
-      supplier: supplier || {},
-      theirOffer,
-      targetLandedCost: targetLandedCost || 3,
-      budget: budget || 500,
-      round: round || 1
-    })
-    res.json(result)
-  } catch (err) {
-    console.error('[Counter Offer] Error:', err.message)
-    res.status(500).json({ error: err.message })
-  }
+    res.json(await generateCounterOffer({ product, supplier: supplier || {}, theirOffer, targetLandedCost: targetLandedCost || 3, budget: budget || 500, round: round || 1 }))
+  } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// Generate Amazon listing content
 app.post('/api/ops/generate-listing', requireLLM, async (req, res) => {
   const { product, category, pricePoint, features, keywords } = req.body
   if (!product) return res.status(400).json({ error: 'product is required' })
-
   try {
-    const result = await generateListingContent({
-      product,
-      category,
-      pricePoint,
-      features,
-      keywords
-    })
-    res.json(result)
-  } catch (err) {
-    console.error('[Generate Listing] Error:', err.message)
-    res.status(500).json({ error: err.message })
-  }
+    res.json(await generateListingContent({ product, category, pricePoint, features, keywords }))
+  } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// Generate investor KPI report
 app.post('/api/ops/kpi-report', requireLLM, async (req, res) => {
   const { portfolio, period, metrics, recentActions } = req.body
-
   try {
-    const result = await generateKPIReport({
-      portfolio,
-      period,
-      metrics,
-      recentActions
-    })
-    res.json(result)
-  } catch (err) {
-    console.error('[KPI Report] Error:', err.message)
-    res.status(500).json({ error: err.message })
-  }
+    res.json(await generateKPIReport({ portfolio, period, metrics, recentActions }))
+  } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// ─── Vector Search Endpoints ─────────────────────────────────
+// ─── Vector Search ───────────────────────────────────────────────
 
-// Semantic search across all stored embeddings
 app.post('/api/research/vector-search', requireLLM, async (req, res) => {
   const { query, type, productId, phaseId, limit } = req.body
   if (!query) return res.status(400).json({ error: 'query is required' })
-
   try {
-    const results = await vectorSearch(query, {
-      limit: Math.min(limit || 5, 20),
-      type: type || null,
-      productId: productId || null,
-      phaseId: phaseId || null
-    })
-    res.json({ results })
-  } catch (err) {
-    console.error('[Vector Search] Error:', err.message)
-    res.status(500).json({ error: err.message })
-  }
+    res.json({ results: await vectorSearch(query, { limit: Math.min(limit || 5, 20), type: type || null, productId: productId || null, phaseId: phaseId || null }) })
+  } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// Vector store stats
 app.get('/api/research/vector-stats', (req, res) => {
-  try {
-    res.json(vectorStats())
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
+  try { res.json(vectorStats()) } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// ─── Boot ────────────────────────────────────────────────────
+// ─── Boot ───────────────────────────────────────────────────────────
 
 app.listen(config.port, () => {
   const info = getProviderInfo()
-  console.log(`\n🚀 Seller Platform backend on http://localhost:${config.port}`)
+  console.log(`\n🚀 Amazon Seller Pack on http://localhost:${config.port}`)
   console.log(`   LLM: ${info.configured ? `✅ ${info.provider} (${info.model})` : '❌ NOT CONFIGURED — copy .env.example to .env'}`)
-  console.log(`   Database: ✅ SQLite (WAL mode)`)
-  console.log(`   API: /api/catalog, /api/trends, /api/store, /api/research, /api/ops`)
-  console.log(`   Health: http://localhost:${config.port}/api/health\n`)
+  console.log(`   AgentOS pack endpoints: /health  /pack/manifest  /pack/run  /pack/billing/consume`)
+  console.log(`   API: /api/catalog, /api/trends, /api/store, /api/research, /api/ops\n`)
 })
