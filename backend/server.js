@@ -7,6 +7,7 @@ import {
   generateOutreachEmail,
   generateCounterOffer,
   generateListingContent,
+  generateInstagramContent,
   generateKPIReport
 } from './src/operations.js'
 import { registerUser, loginUser, generateToken, requireAuth } from './src/auth.js'
@@ -19,6 +20,7 @@ import billingRoutes from './src/routes/billing.js'
 import chatRoutes from './src/routes/chat.js'
 import packRouter from './src/pack_adapter.js'
 import { mountHealth } from './src/pack_health.js'
+import socialRoutes from './src/routes/social.js'
 import './src/db.js' // Initialize database on startup
 
 const app = express()
@@ -82,6 +84,7 @@ app.use('/api/trends', requireAuth, trendsRoutes)
 app.use('/api/store', requireAuth, storeRoutes)
 app.use('/api/billing', requireAuth, billingRoutes)
 app.use('/api/chat', requireAuth, chatRoutes)
+app.use('/api/social', requireAuth, socialRoutes)
 
 // Public storefront endpoint (no auth)
 app.get('/api/storefront/:storeSlug', (req, res, next) => {
@@ -196,6 +199,26 @@ app.post('/api/ops/generate-listing', requireLLM, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
+// Generate Instagram content (caption, hashtags, origin story, image brief)
+app.post('/api/ops/generate-instagram-content', requireLLM, async (req, res) => {
+  const { product, category, originStory, supplier } = req.body
+  if (!product) return res.status(400).json({ error: 'product is required' })
+
+  try {
+    const result = await generateInstagramContent({
+      product,
+      category,
+      originStory,
+      supplier: supplier || {}
+    })
+    res.json(result)
+  } catch (err) {
+    console.error('[Generate Instagram Content] Error:', err.message)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Generate investor KPI report
 app.post('/api/ops/kpi-report', requireLLM, async (req, res) => {
   const { portfolio, period, metrics, recentActions } = req.body
   try {
@@ -224,5 +247,7 @@ app.listen(config.port, () => {
   console.log(`\n🚀 Amazon Seller Pack on http://localhost:${config.port}`)
   console.log(`   LLM: ${info.configured ? `✅ ${info.provider} (${info.model})` : '❌ NOT CONFIGURED — copy .env.example to .env'}`)
   console.log(`   AgentOS pack endpoints: /health  /pack/manifest  /pack/run  /pack/billing/consume`)
-  console.log(`   API: /api/catalog, /api/trends, /api/store, /api/research, /api/ops\n`)
+  console.log(`   Database: ✅ SQLite (WAL mode)`)
+  console.log(`   API: /api/catalog, /api/trends, /api/store, /api/research, /api/ops, /api/social`)
+  console.log(`   Health: http://localhost:${config.port}/api/health\n`)
 })

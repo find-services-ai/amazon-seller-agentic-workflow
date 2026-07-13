@@ -385,6 +385,51 @@ const MIGRATIONS = [
         ('starter', 'Starter', 15, 100, 3.5, '["deal_scoring","full_research","storefront","supplier_intel","ppc_basic","marketplace_browse"]', 0),
         ('pro', 'Pro', -1, -1, 5.0, '["deal_scoring","full_research","storefront","supplier_intel","ppc_advanced","marketplace_full","white_label","autopilot","api_access"]', 0);
     `
+  },
+  {
+    version: 4,
+    name: 'instagram_social_content',
+    up: `
+      -- One Instagram Business Account per seller per category ("a page per category")
+      CREATE TABLE IF NOT EXISTS instagram_accounts (
+        id                     INTEGER PRIMARY KEY AUTOINCREMENT,
+        seller_id              INTEGER NOT NULL REFERENCES sellers(id),
+        category_id            INTEGER REFERENCES categories(id),
+        ig_business_account_id TEXT NOT NULL,
+        page_id                TEXT,
+        access_token           TEXT NOT NULL, -- long-lived Graph API token; never log or return this field
+        token_expires_at       TEXT,
+        created_at             TEXT DEFAULT (datetime('now')),
+        UNIQUE(seller_id, category_id)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_ig_accounts_seller ON instagram_accounts(seller_id);
+
+      -- Generated + published Instagram content per product
+      CREATE TABLE IF NOT EXISTS instagram_content (
+        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id       INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+        seller_id        INTEGER NOT NULL REFERENCES sellers(id),
+        category_id      INTEGER REFERENCES categories(id),
+        origin_story     TEXT,
+        brand_voice_tag  TEXT DEFAULT 'happiness-ethos',
+        caption          TEXT,
+        hashtags         TEXT, -- JSON array
+        image_brief      TEXT,
+        cta              TEXT,
+        status           TEXT DEFAULT 'draft' CHECK(status IN ('draft','approved','publishing','published','failed')),
+        graph_media_id   TEXT,
+        graph_post_id    TEXT,
+        published_at     TEXT,
+        error            TEXT,
+        created_at       TEXT DEFAULT (datetime('now')),
+        updated_at       TEXT DEFAULT (datetime('now'))
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_ig_content_product ON instagram_content(product_id);
+      CREATE INDEX IF NOT EXISTS idx_ig_content_seller ON instagram_content(seller_id);
+      CREATE INDEX IF NOT EXISTS idx_ig_content_status ON instagram_content(status);
+    `
   }
 ]
 

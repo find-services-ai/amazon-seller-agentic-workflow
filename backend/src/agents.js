@@ -7,7 +7,8 @@ const AGENT_FILES = {
   competition: 'competition-analysis.agent.md',
   pricing: 'pricing-strategy.agent.md',
   'supply-chain': 'supplier-management.agent.md',
-  risk: 'risk-assessment.agent.md'
+  risk: 'risk-assessment.agent.md',
+  social: 'social-content.agent.md'
 }
 
 // Phase-specific skills to inject alongside product-validation
@@ -16,7 +17,8 @@ const PHASE_SKILLS = {
   competition: ['product-validation'],
   pricing: ['product-validation', 'listing-optimization'],
   'supply-chain': ['product-validation', 'supplier-management'],
-  risk: ['product-validation', 'amazon-ops-system']
+  risk: ['product-validation', 'amazon-ops-system'],
+  social: ['social-content']
 }
 
 // Phase-dependent max_tokens — detailed phases get more room
@@ -25,7 +27,8 @@ const PHASE_MAX_TOKENS = {
   competition: 4000,
   pricing: 4000,
   'supply-chain': 3000,
-  risk: 4000
+  risk: 4000,
+  social: 2500
 }
 
 const promptCache = {}

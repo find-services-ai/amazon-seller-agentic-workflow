@@ -1,5 +1,5 @@
 import { callLLM } from './llm.js'
-import { loadAgentPrompt } from './agents.js'
+import { loadAgentPrompt, loadSkillContext } from './agents.js'
 import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 import config from './config.js'
@@ -126,6 +126,41 @@ Requirements:
 - Bullets: Start with CAPITAL BENEFIT PHRASE, include keywords naturally
 - Description: Address top customer concerns, include care instructions
 - Search terms: No commas, no brand names, include misspellings and synonyms`
+
+  return callLLM(systemPrompt, userMessage)
+}
+
+// ─── Instagram Content Generation ────────────────────────────
+
+export async function generateInstagramContent({ product, category, originStory, supplier }) {
+  const agentPrompt = loadAgentPrompt('social')
+  const skill = loadSkillContext('social-content')
+
+  const systemPrompt = `${agentPrompt}
+
+${skill ? `\n## Social Content Skill\n${skill}\n` : ''}
+
+Generate Instagram content in the Happiness Ethos brand voice for this product's category page.
+Ground the origin story only in the sourcing facts provided — never invent suppliers, certifications, or people.
+
+RESPOND WITH ONLY a valid JSON object:
+{
+  "caption": "<full Instagram caption, hook line first>",
+  "hashtags": ["<8-15 hashtags, no # duplicates>"],
+  "image_brief": "<concrete shot direction: subject, setting, lighting, emotional beat>",
+  "origin_story_refined": "<2-3 sentence refined origin story following Sourcing -> Craftsmanship -> Happiness payoff>",
+  "cta": "<single call-to-action line>"
+}`
+
+  const userMessage = `Generate Instagram content:
+
+Product: ${product}
+Category: ${category || 'Not specified'}
+Origin Story (raw sourcing facts on file): ${originStory || 'No sourcing detail on file — keep the origin story generic and honest, do not fabricate specifics.'}
+${supplier?.name ? `Supplier: ${supplier.name}` : ''}
+${supplier?.country ? `Supplier Country: ${supplier.country}` : ''}
+${supplier?.specialization ? `Supplier Specialization: ${supplier.specialization}` : ''}
+${supplier?.years ? `Years in business: ${supplier.years}+` : ''}`
 
   return callLLM(systemPrompt, userMessage)
 }
