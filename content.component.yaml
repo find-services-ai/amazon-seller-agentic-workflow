@@ -1,0 +1,52 @@
+# AgentOS Content Engine — component manifest
+# This repository is a VERTICAL component: its product-sourcing research
+# (deal sheets, supplier matrices) seeds product-storytelling Instagram pages.
+# The engine hub (mcp-idea-publisher) mirrors this entry in channels.yaml.
+
+component_id: amazon-seller
+name: "Amazon Seller Vertical"
+repo: find-services-ai/amazon-seller-agentic-workflow
+role: vertical
+description: >
+  Autonomous Amazon FBA sourcing pipeline. Validated deals and honest supplier
+  facts become origin stories for category pages — never invented sourcing.
+seed_sources:
+  - active-deals/
+  - supplier-comparison-matrix.csv
+  - phase2-3-supplier-discovery-pet-slicker-brush.md
+channels:
+  - channel_id: find.ai.beddings
+    handle: find.ai.beddings
+    platform: instagram
+    category: "Bedding"
+    niche: "Sleep comfort and bedding products with honest sourcing stories"
+    pillars:
+      - "Sleep ritual: the small evening moment this product makes better"
+      - "Honest sourcing: where this bedding actually comes from and why it matters"
+      - "Comfort science: one sleep-quality fact tied to a product benefit"
+      - "Home styling: making a bedroom feel calm with one change"
+    cadence_hours: 6
+    active: true
+  - channel_id: find.ai.bats
+    handle: find.ai.bats
+    platform: instagram
+    category: "Bats"
+    niche: "Cricket and baseball bats, gear craft, and practice culture"
+    pillars:
+      - "Gear craft: what separates a good bat from a great one"
+      - "Practice story: a training moment every player recognizes"
+      - "Buyer guide: one concrete thing to check before buying a bat"
+    cadence_hours: 8
+    active: true
+  - channel_id: find.ai.sports
+    handle: find.ai.sports
+    platform: instagram
+    category: "Sports"
+    niche: "Everyday sports gear that makes practice easier and more fun"
+    pillars:
+      - "Game-day moment: the feeling the right gear unlocks"
+      - "Underrated gear: one inexpensive item that changes practice"
+      - "Weekend athlete: honest content for people who play for joy"
+    cadence_hours: 6
+    active: true
+license: BSL-1.1
