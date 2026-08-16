@@ -1,0 +1,11 @@
+# Without this, `COPY . .` after `npm ci` overwrote the correctly-built
+# Linux node_modules (better-sqlite3's native binding in particular) with
+# the host's own node_modules -- a macOS-built .node file landing in a
+# Linux container fails with "invalid ELF header" at require() time.
+# Confirmed live: file on the host's better_sqlite3.node reported
+# "Mach-O 64-bit bundle arm64", not what a Linux container can dlopen.
+node_modules/
+data/
+*.log
+.env
+.git/
