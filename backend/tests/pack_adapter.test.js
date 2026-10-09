@@ -45,10 +45,12 @@ await jest.unstable_mockModule('../src/db.js', () => ({ default: {} }))
 
 // ─── Import after mocks ────────────────────────────────────────
 
-import express from 'express'
-import request from 'supertest'
-import packRouter from '../src/pack_adapter.js'
-import { mountHealth } from '../src/pack_health.js'
+// Dynamic imports: static imports are hoisted above the mocks registered with
+// top-level await, which would load the real modules (and the real database).
+const { default: express } = await import('express')
+const { default: request } = await import('supertest')
+const { default: packRouter } = await import('../src/pack_adapter.js')
+const { mountHealth } = await import('../src/pack_health.js')
 
 const buildApp = () => {
   const app = express()
