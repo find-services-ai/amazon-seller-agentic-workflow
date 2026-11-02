@@ -45,10 +45,11 @@ await jest.unstable_mockModule('../src/db.js', () => ({ default: {} }))
 
 // ─── Import after mocks ────────────────────────────────────────
 
-import express from 'express'
-import request from 'supertest'
-import packRouter from '../src/pack_adapter.js'
-import { mountHealth } from '../src/pack_health.js'
+// Static imports are hoisted above the mocks, so load the code under test dynamically.
+const { default: express } = await import('express')
+const { default: request } = await import('supertest')
+const { default: packRouter } = await import('../src/pack_adapter.js')
+const { mountHealth } = await import('../src/pack_health.js')
 
 const buildApp = () => {
   const app = express()
